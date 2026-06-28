@@ -63,5 +63,21 @@ int loadHistory(int studentRef,PredictionRecord arr[],int *n){
     return *n;
  }
 
- 
-   
+ /*--Search student by name(partical match)--*/
+ void searchByName(const char*name){
+    Student arr[100];
+    int n,i,found = 0;
+    loadAllStudents(arr,&n);
+    printf("\n Search results for: \"%s\"\n", name);
+    printf("%-5s %-25s %-15s %-6s\n","ID","Name","Student ID","CGPA");
+    printf("%-5s %-25s %-15s %-6s\n","--","----","----------","----");
+    for(i=0;i<n;i++){
+        if(arr[i].isActive == 1&& strstr(arr[i].name,name)!=NULL){
+            printf("%-5d %-25s %-15s %-6.2f\n",arr[i].id,arr[i].name,arr[i].studentID,arr[i].cgpa);
+            found = 1;
+        }
+ }
+    if(!found){
+        printf("No students found with that name.\n");
+    }
+}
