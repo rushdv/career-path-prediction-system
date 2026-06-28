@@ -1,3 +1,4 @@
+cat > Makefile << 'EOF'
 CC     = gcc
 CFLAGS = -Wall -Wextra -Iinclude
 SRC    = src/main.c src/auth.c src/student.c \
@@ -12,3 +13,4 @@ career_system: $(SRC)
 
 clean:
 	rm -f career_system
+EOF
