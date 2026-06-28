@@ -35,3 +35,15 @@ void updateStudentFile(Student arr[],int n){
     }
     fwrite(arr, sizeof(Student),n,f);
 }
+
+/*--Load prediction history for a student--*/
+void savePrediction(PredictionRecord *pr){
+    FILE *f=fopen("dsts/history.dat","ab");
+    if(f==NULL){
+        printf("Error: Cannot open history.dat\n");
+        return;
+    }
+    fwrite(pr, sizeof(PredictionRecord),1,f);
+    fclose(f);  
+}
+
