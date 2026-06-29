@@ -1,8 +1,16 @@
+#ifndef ASSESSMENT_H
+#define ASSESSMENT_H
+
 typedef struct {
-    float programming;    // 0-100
-    float networking;     // 0-100
-    float design;         // 0-100
-    float analytics;      // 0-100
-    float communication;  // 0-100
-    float security;       // 0-100
+    int   studentRef;
+    float programming;
+    float networking;
+    float design;
+    float analytics;
+    float communication;
+    float security;
 } SkillProfile;
+
+SkillProfile runAssessment(int studentRef);
+
+#endif
