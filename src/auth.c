@@ -25,11 +25,11 @@ Session login(void)
            "                                                " C_BORDER DBL_V RESET "\n");
 
     printf(C_BORDER "  " DBL_V RESET
-           C_TITLE BOLD "     \xe2\x97\x8f  CAREER PATH PREDICTION SYSTEM  \xe2\x97\x8f     " RESET
+           C_TITLE BOLD "      \xe2\x97\x8f  CAREER PATH PREDICTION SYSTEM  \xe2\x97\x8f       " RESET
            C_BORDER DBL_V RESET "\n");
 
     printf(C_BORDER "  " DBL_V RESET
-           C_DIM "         Northern University Bangladesh          " RESET
+           C_DIM "         Northern University Bangladesh         " RESET
            C_BORDER DBL_V RESET "\n");
 
     printf(C_BORDER "  " DBL_V RESET
@@ -82,8 +82,7 @@ Session login(void)
         char pass[30];
         printf("\n");
         boxTop();
-        printf(C_BORDER BOX_V RESET "   " C_TITLE BOLD "  ADMIN AUTHENTICATION  " RESET
-               "%*s" C_BORDER BOX_V RESET "\n", 23, "");
+        boxRowRaw(C_TITLE BOLD "  ADMIN AUTHENTICATION  " RESET, 24);
         boxBottom();
 
         printf("\n");
@@ -110,8 +109,7 @@ Session login(void)
     {
         printf("\n");
         boxTop();
-        printf(C_BORDER BOX_V RESET "   " C_TITLE BOLD "  STUDENT AUTHENTICATION  " RESET
-               "%*s" C_BORDER BOX_V RESET "\n", 21, "");
+        boxRowRaw(C_TITLE BOLD "  STUDENT AUTHENTICATION  " RESET, 26);
         boxBottom();
 
         printf("\n");
@@ -129,6 +127,7 @@ Session login(void)
                 strcmp(arr[i].studentID, s.studentID) == 0)
             {
                 found = 1;
+                s.studentNumId = arr[i].id;  /* store numeric PK for file lookups */
                 printf("\n");
                 printSuccess("Access Granted!");
                 printf("  " C_INFO "Welcome back, " RESET C_VALUE BOLD "%s" RESET "\n\n",
@@ -155,6 +154,21 @@ Session login(void)
         inputPrompt("Enter your Student ID");
         scanf("%s", s.studentID);
         getchar();
+
+        /* Look up numeric id for the newly registered student */
+        {
+            Student arr2[100];
+            int n2 = 0, i2;
+            s.studentNumId = 0;
+            loadAllStudents(arr2, &n2);
+            for (i2 = 0; i2 < n2; i2++) {
+                if (arr2[i2].isActive == 1 &&
+                    strcmp(arr2[i2].studentID, s.studentID) == 0) {
+                    s.studentNumId = arr2[i2].id;
+                    break;
+                }
+            }
+        }
     }
 
     else

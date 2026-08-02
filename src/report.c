@@ -78,27 +78,29 @@ void generateReport(Student *s, SkillProfile *sp,
 
     fclose(f);
 
-    /* ── Terminal confirmation (styled) ── */
+    /* ── Terminal confirmation box ── */
     printf("\n");
-    printf(C_BORDER "  " BOX_TL);
-    int d; for (d = 0; d < 48; d++) printf(BOX_H);
-    printf(BOX_TR RESET "\n");
+    {
+        /* Row 1: SYM_CHECK(1) + "  Report generated successfully!"(32) = 33 */
+        char plain2[64], colored2[256];
+        int dlen2 = snprintf(plain2, sizeof(plain2),
+                             "File  : %s", filename);
+        snprintf(colored2, sizeof(colored2),
+                 C_INFO "File  " RESET ": " C_VALUE BOLD "%s" RESET, filename);
 
-    printf(C_BORDER "  " BOX_V RESET "  "
-           C_SUCCESS BOLD SYM_CHECK "  Report generated successfully!" RESET
-           "%*s" C_BORDER BOX_V RESET "\n", 14, "");
+        char plain3[64], colored3[128];
+        int dlen3 = snprintf(plain3, sizeof(plain3),
+                             "Time  : %s", timeStr);
+        snprintf(colored3, sizeof(colored3),
+                 C_INFO "Time  " RESET ": " C_VALUE "%s" RESET, timeStr);
 
-    printf(C_BORDER "  " BOX_V RESET "  "
-           C_INFO "File  " RESET ": " C_VALUE BOLD "%-38s" RESET
-           C_BORDER BOX_V RESET "\n", filename);
-
-    printf(C_BORDER "  " BOX_V RESET "  "
-           C_INFO "Time  " RESET ": " C_VALUE "%-38s" RESET
-           C_BORDER BOX_V RESET "\n", timeStr);
-
-    printf(C_BORDER "  " BOX_BL);
-    for (d = 0; d < 48; d++) printf(BOX_H);
-    printf(BOX_BR RESET "\n\n");
+        boxTop();
+        boxRowRaw(C_SUCCESS BOLD SYM_CHECK "  Report generated successfully!" RESET, 33);
+        boxRowRaw(colored2, dlen2);
+        boxRowRaw(colored3, dlen3);
+        boxBottom();
+    }
+    printf("\n\n");
 
     pauseScreen();
 }
