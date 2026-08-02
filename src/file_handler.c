@@ -26,3 +26,13 @@ int loadAllStudents(Student arr[],int *n){
     return *n;
 }
 
+/--Rewrite entire student.dat with updated array--/
+void updateStudentFile(Student arr[],int n){
+    FILE*f=fopen("data/students.dat","wb");
+    if(f==NULL){
+        printf("Error: Cannot rewrite students.dat\n");
+        return;
+    }
+    fwrite(arr, sizeof(Student),n,f);
+    fclose(f);
+}
