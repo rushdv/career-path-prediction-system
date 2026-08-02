@@ -68,3 +68,18 @@ void analyzeGap(SkillProfile *sp, CareerPath *cp) {
         printSkillBar("", cp->minRequired[i], 16);
         printf("\n");
     }
+     printf("  " C_DIM);
+    for (d = 0; d < 66; d++) printf(BOX_H);
+    printf(RESET "\n\n");
+
+    if (!hasGap) {
+        /* Full green box */
+        printf(C_BORDER "  " BOX_TL);
+        for (d = 0; d < 48; d++) printf(BOX_H);
+        printf(BOX_TR RESET "\n");
+
+        printf(C_BORDER "  " BOX_V RESET "  "
+               C_SUCCESS BOLD SYM_CHECK
+               "  You meet ALL requirements for " RESET
+               C_VALUE BOLD "%-14s" RESET "  " C_BORDER BOX_V RESET "\n",
+               cp->name);
