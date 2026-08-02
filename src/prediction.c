@@ -127,3 +127,24 @@ void rankCareers(SkillProfile *sp) {
     printf(C_BORDER "  " BOX_BL);
     for (b = 0; b < 48; b++) printf(BOX_H);
     printf(BOX_BR RESET "\n\n");
+/* Save to history */
+    PredictionRecord pr;
+    pr.studentRef = sp->studentRef;
+    pr.score      = scores[0];
+    strncpy(pr.topCareer, ranked[0].name, sizeof(pr.topCareer) - 1);
+    pr.topCareer[sizeof(pr.topCareer) - 1] = '\0';
+
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    strftime(pr.timestamp, sizeof(pr.timestamp), "%Y-%m-%d %H:%M:%S", t);
+    savePrediction(&pr);
+
+    pauseScreen();
+}
+
+/* ── Expose careers for other modules ───────────────────── */
+void getCareers(CareerPath out[], int *count) {
+    int i;
+    for (i = 0; i < NUM_CAREERS; i++) out[i] = careers[i];
+    *count = NUM_CAREERS;
+}
