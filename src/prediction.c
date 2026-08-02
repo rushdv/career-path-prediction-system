@@ -108,3 +108,22 @@ void rankCareers(SkillProfile *sp) {
             printf(RESET "\n");
         }
     }
+  printf("\n");
+
+    /* Top recommendation highlight box */
+    printf(C_BORDER "  " BOX_TL);
+    int b; for (b = 0; b < 48; b++) printf(BOX_H);
+    printf(BOX_TR RESET "\n");
+
+    printf(C_BORDER "  " BOX_V RESET "  "
+           C_ACCENT BOLD SYM_ARROW "  Top Recommendation: " RESET
+           C_VALUE BOLD "%-24s" RESET "  " C_BORDER BOX_V RESET "\n", ranked[0].name);
+
+    printf(C_BORDER "  " BOX_V RESET "  "
+           C_DIM    "   Weighted Score:    " RESET
+           C_SUCCESS BOLD "%-6.2f / 10.00" RESET
+           "              " C_BORDER BOX_V RESET "\n", scores[0]);
+
+    printf(C_BORDER "  " BOX_BL);
+    for (b = 0; b < 48; b++) printf(BOX_H);
+    printf(BOX_BR RESET "\n\n");
