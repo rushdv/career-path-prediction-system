@@ -47,3 +47,21 @@ void savePrediction(PredictionRecord *pr){
     fwrite(pr, sizeof(PredictionRecord),1,f);
     fclose(f);  
 }
+
+/-- Load prediction history for a student--/
+int loadHistory(int studentRef,PredictionRecord arr[],int *n){
+    FILE *f=fopen("data/history.dat","rb");
+    *n=0;
+    if(f==NULL) return 0; 
+    
+    PredictionRecord temp;
+    while(fread(&temp,sizeof(PredictionRecord),1,f)==1){
+        if(temp.studentRef == studentRef){
+            arr[(*n)++]= temp;
+        }
+     }
+     fclose(f);
+    return *n;
+ }
+
+ /*--Search student by name(partial match) -- moved to student.c --*Thank you for your business! We look forward to working with you again.
