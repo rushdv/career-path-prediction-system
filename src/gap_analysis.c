@@ -83,3 +83,16 @@ void analyzeGap(SkillProfile *sp, CareerPath *cp) {
                "  You meet ALL requirements for " RESET
                C_VALUE BOLD "%-14s" RESET "  " C_BORDER BOX_V RESET "\n",
                cp->name);
+
+        printf(C_BORDER "  " BOX_BL);
+        for (d = 0; d < 48; d++) printf(BOX_H);
+        printf(BOX_BR RESET "\n\n");
+    } else {
+        printf("  " C_WARNING SYM_WARN BOLD
+               "  Focus on the skills marked "
+               C_NEEDS "[NEEDS IMPROVEMENT]" RESET
+               C_WARNING " to close your gaps.\n" RESET "\n");
+    }
+
+    pauseScreen();
+}
