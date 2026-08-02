@@ -47,3 +47,24 @@ void analyzeGap(SkillProfile *sp, CareerPath *cp) {
         else if (skills[i] >= 4.0f) printf(C_WARNING BOLD);
         else                         printf(C_ERROR   BOLD);
         printf("%5.1f" RESET "    ", skills[i]);
+           /* Required score */
+        printf(C_VALUE "%7.1f" RESET "  ", cp->minRequired[i]);
+
+        if (gap > 0) {
+            /* Gap: show deficit in red */
+            printf(C_ERROR BOLD "%+5.1f" RESET "  ", -gap);
+            printf(C_NEEDS BOLD "  \xe2\x9a\xa0  NEEDS IMPROVEMENT" RESET "\n");
+            hasGap = 1;
+        } else {
+            printf(C_SUCCESS BOLD "%+5.1f" RESET "  ", -gap);
+            printf(C_OK     BOLD "  \xe2\x9c\x94  OK" RESET "\n");
+        }
+
+        /* Mini progress bar for this skill */
+        printf("  " C_DIM "                 Your: " RESET);
+        printSkillBar("", skills[i], 16);
+
+        printf("  " C_DIM "                 Need: " RESET);
+        printSkillBar("", cp->minRequired[i], 16);
+        printf("\n");
+    }
