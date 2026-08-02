@@ -77,3 +77,28 @@ void generateReport(Student *s, SkillProfile *sp,
     fprintf(f, "================================================\n");
 
     fclose(f);
+
+    /* ── Terminal confirmation (styled) ── */
+    printf("\n");
+    printf(C_BORDER "  " BOX_TL);
+    int d; for (d = 0; d < 48; d++) printf(BOX_H);
+    printf(BOX_TR RESET "\n");
+
+    printf(C_BORDER "  " BOX_V RESET "  "
+           C_SUCCESS BOLD SYM_CHECK "  Report generated successfully!" RESET
+           "%*s" C_BORDER BOX_V RESET "\n", 14, "");
+
+    printf(C_BORDER "  " BOX_V RESET "  "
+           C_INFO "File  " RESET ": " C_VALUE BOLD "%-38s" RESET
+           C_BORDER BOX_V RESET "\n", filename);
+
+    printf(C_BORDER "  " BOX_V RESET "  "
+           C_INFO "Time  " RESET ": " C_VALUE "%-38s" RESET
+           C_BORDER BOX_V RESET "\n", timeStr);
+
+    printf(C_BORDER "  " BOX_BL);
+    for (d = 0; d < 48; d++) printf(BOX_H);
+    printf(BOX_BR RESET "\n\n");
+
+    pauseScreen();
+}
