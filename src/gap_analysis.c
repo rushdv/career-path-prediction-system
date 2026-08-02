@@ -33,3 +33,17 @@ void analyzeGap(SkillProfile *sp, CareerPath *cp) {
     printf("  " C_DIM);
     int d; for (d = 0; d < 66; d++) printf(BOX_H);
     printf(RESET "\n\n");
+       int i;
+    int hasGap = 0;
+
+    for (i = 0; i < 6; i++) {
+        float gap = cp->minRequired[i] - skills[i];
+
+        /* Skill name + your bar */
+        printf("  " C_INFO "%-16s" RESET "  ", skillNames[i]);
+
+        /* Your score colored */
+        if      (skills[i] >= 7.0f) printf(C_SUCCESS BOLD);
+        else if (skills[i] >= 4.0f) printf(C_WARNING BOLD);
+        else                         printf(C_ERROR   BOLD);
+        printf("%5.1f" RESET "    ", skills[i]);
