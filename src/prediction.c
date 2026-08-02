@@ -64,3 +64,47 @@ float calculateScore(SkillProfile *sp, CareerPath *cp) {
     }
     return score;
 }
+/* ── Rank and display careers ───────────────────────────── */
+void rankCareers(SkillProfile *sp) {
+    float     scores[NUM_CAREERS];
+    CareerPath ranked[NUM_CAREERS];
+    int i, j;
+
+    for (i = 0; i < NUM_CAREERS; i++) {
+        ranked[i] = careers[i];
+        scores[i] = calculateScore(sp, &careers[i]);
+    }
+
+    /* Bubble sort descending */
+    for (i = 0; i < NUM_CAREERS - 1; i++) {
+        for (j = 0; j < NUM_CAREERS - 1 - i; j++) {
+            if (scores[j] < scores[j + 1]) {
+                float      ts = scores[j];  scores[j]  = scores[j+1];  scores[j+1]  = ts;
+                CareerPath tc = ranked[j];  ranked[j]  = ranked[j+1];  ranked[j+1]  = tc;
+            }
+        }
+    }
+
+    CLEAR_SCREEN();
+    printf("\n");
+    printBanner("  CAREER PATH PREDICTION RESULTS  ", 34);
+    printf("\n");
+
+    for (i = 0; i < NUM_CAREERS; i++) {
+        /* Row color */
+        if      (i == 0) printf(C_RANK1);
+        else if (i == 1) printf(C_RANK2);
+        else if (i == 2) printf(C_RANK3);
+        else             printf(C_DIM);
+
+        printf("  %s" RESET "  " C_VALUE "%-24s" RESET "  ", rankLabel(i+1), ranked[i].name);
+        printScoreBar(scores[i], 16);
+        printf("  " BOLD "%.2f/10" RESET "\n", scores[i]);
+
+        if (i == 0) {
+            /* Divider after top pick */
+            printf("  " C_DIM);
+            int d; for (d = 0; d < 48; d++) printf(BOX_H);
+            printf(RESET "\n");
+        }
+    }
