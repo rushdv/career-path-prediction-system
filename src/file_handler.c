@@ -36,3 +36,14 @@ void updateStudentFile(Student arr[],int n){
     fwrite(arr, sizeof(Student),n,f);
     fclose(f);
 }
+
+/--Save one PredictionRecord(append)--/
+void savePrediction(PredictionRecord *pr){
+    FILE *f=fopen("data/history.dat","ab");
+    if(f==NULL){
+        printf("Error: Cannot open history.dat\n");
+        return;
+    }
+    fwrite(pr, sizeof(PredictionRecord),1,f);
+    fclose(f);  
+}
