@@ -39,3 +39,41 @@ void generateReport(Student *s, SkillProfile *sp,
     fprintf(f, "------------------------------------------------\n");
     fprintf(f, " SKILL ASSESSMENT\n");
     fprintf(f, "------------------------------------------------\n");
+
+    /* Skill bars as ASCII art in file */
+    float skillVals[6] = {
+        sp->programming, sp->networking, sp->design,
+        sp->analytics, sp->communication, sp->security
+    };
+    const char *skillLabels[6] = {
+        "Programming", "Networking", "Design",
+        "Analytics", "Communication", "Security"
+    };
+    int i, b;
+    for (i = 0; i < 6; i++) {
+        int filled = (int)((skillVals[i] / 10.0f) * 20);
+        int empty  = 20 - filled;
+        fprintf(f, " %-16s [", skillLabels[i]);
+        for (b = 0; b < filled; b++) fprintf(f, "#");
+        for (b = 0; b < empty;  b++) fprintf(f, ".");
+        fprintf(f, "] %.1f/10\n", skillVals[i]);
+    }
+
+    fprintf(f, "\n------------------------------------------------\n");
+    fprintf(f, " CAREER PATH RANKINGS\n");
+    fprintf(f, "------------------------------------------------\n");
+    for (i = 0; i < NUM_CAREERS; i++) {
+        int filled = (int)((scores[i] / 10.0f) * 20);
+        int empty  = 20 - filled;
+        fprintf(f, " %d. %-24s [", i + 1, ranked[i].name);
+        for (b = 0; b < filled; b++) fprintf(f, "#");
+        for (b = 0; b < empty;  b++) fprintf(f, ".");
+        fprintf(f, "] %.2f/10\n", scores[i]);
+    }
+
+    fprintf(f, "\n TOP RECOMMENDATION : %s (%.2f/10)\n\n", ranked[0].name, scores[0]);
+    fprintf(f, "================================================\n");
+    fprintf(f, " END OF REPORT\n");
+    fprintf(f, "================================================\n");
+
+    fclose(f);
