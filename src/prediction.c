@@ -116,7 +116,7 @@ void rankCareers(SkillProfile *sp) {
         if (i == 0) {
             /* Divider after #1 */
             printf("  " C_DIM);
-            int d; for (d = 0; d < 48; d++) printf(BOX_H);
+            int d; for (d = 0; d < 58; d++) printf(BOX_H);
             printf(RESET "\n\n");
         }
     }

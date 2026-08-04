@@ -2,7 +2,7 @@
     CAREER PATH PREDICTION SYSTEM REPORT
     Northern University Bangladesh
 ================================================
- Generated  : 2026-08-03 05:56:56
+ Generated  : 2026-08-04 22:33:57
 
 ------------------------------------------------
  STUDENT INFORMATION

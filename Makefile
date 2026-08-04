@@ -3,7 +3,8 @@ CFLAGS = -Wall -Wextra -Iinclude
 SRC    = src/main.c src/auth.c src/student.c \
          src/assessment.c src/prediction.c   \
          src/gap_analysis.c src/file_handler.c \
-         src/report.c src/ui.c src/colors.c
+         src/report.c src/ui.c src/colors.c \
+         src/input_handler.c src/analytics.c
 
 all: career_system
 

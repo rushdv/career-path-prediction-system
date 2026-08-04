@@ -8,6 +8,8 @@
 #include "gap_analysis.h"
 #include "report.h"
 #include "file_handler.h"
+#include "input_handler.h"
+#include "analytics.h"
 
 /* ── Shared: print history table ────────────────────────── */
 static void printHistory(int studentRef, const char *heading) {
@@ -53,25 +55,21 @@ void showAdminMenu(void) {
     strcpy(session.studentID, "ADMIN");
 
     int choice;
+    const char *options[] = {
+        "View All Students",
+        "View Student Profile",
+        "Update Student Profile",
+        "Delete Student",
+        "Search Student by Name",
+        "View Prediction History",
+        "View Analytics Dashboard",
+        "Export Data to CSV",
+        "Logout"
+    };
     do {
-        CLEAR_SCREEN();
-        printf("\n");
-        printBanner("  ADMIN DASHBOARD  ", 19);
-        printf("\n");
-
-        printf("  " C_MENU_NUM BOLD "1." RESET "  " C_MENU_TEXT "View All Students\n"      RESET);
-        printf("  " C_MENU_NUM BOLD "2." RESET "  " C_MENU_TEXT "View Student Profile\n"   RESET);
-        printf("  " C_MENU_NUM BOLD "3." RESET "  " C_MENU_TEXT "Update Student Profile\n" RESET);
-        printf("  " C_MENU_NUM BOLD "4." RESET "  " C_MENU_TEXT "Delete Student\n"         RESET);
-        printf("  " C_MENU_NUM BOLD "5." RESET "  " C_MENU_TEXT "Search Student by Name\n" RESET);
-        printf("  " C_MENU_NUM BOLD "6." RESET "  " C_MENU_TEXT "View Prediction History\n"RESET);
-        printf("\n");
-        printf("  " C_ERROR   BOLD "0." RESET "  " C_DIM "Logout\n" RESET);
-        printf("\n");
-
-        inputPrompt("Enter choice");
-        scanf("%d", &choice);
-        getchar();
+        int sel = getMenuSelection("ADMIN DASHBOARD", NULL, options, 9);
+        if (sel == 8) choice = 0;
+        else choice = sel + 1;
 
         if (choice != 0) handleChoice(choice, &session, NULL, NULL);
 
@@ -98,35 +96,28 @@ void showStudentMenu(Session *session) {
         hasAssessment = 1;
     }
 
-    do {
-        CLEAR_SCREEN();
-        printf("\n");
-        printBanner("  STUDENT DASHBOARD  ", 21);
-        printf("\n");
+    const char *options[] = {
+        "View My Profile",
+        "Update My Profile",
+        "Run Skill Assessment",
+        "View Career Prediction",
+        "View Gap Analysis",
+        "Generate Report",
+        "View My Prediction History",
+        "Logout"
+    };
 
-        /* Show a small status badge if assessment is loaded */
+    do {
+        char subtitle[256];
         if (hasAssessment) {
-            printf("  " C_SUCCESS BOLD SYM_CHECK RESET
-                   "  " C_DIM "Skill profile loaded" RESET "\n\n");
+            snprintf(subtitle, sizeof(subtitle), "  " C_SUCCESS BOLD SYM_CHECK RESET "  " C_DIM "Skill profile loaded" RESET);
         } else {
-            printf("  " C_WARNING BOLD SYM_WARN RESET
-                   "  " C_DIM "No skill profile — run option 3 first" RESET "\n\n");
+            snprintf(subtitle, sizeof(subtitle), "  " C_WARNING BOLD SYM_WARN RESET "  " C_DIM "No skill profile — run option 3 first" RESET);
         }
 
-        printf("  " C_MENU_NUM BOLD "1." RESET "  " C_MENU_TEXT "View My Profile\n"          RESET);
-        printf("  " C_MENU_NUM BOLD "2." RESET "  " C_MENU_TEXT "Update My Profile\n"        RESET);
-        printf("  " C_MENU_NUM BOLD "3." RESET "  " C_MENU_TEXT "Run Skill Assessment\n"     RESET);
-        printf("  " C_MENU_NUM BOLD "4." RESET "  " C_MENU_TEXT "View Career Prediction\n"   RESET);
-        printf("  " C_MENU_NUM BOLD "5." RESET "  " C_MENU_TEXT "View Gap Analysis\n"        RESET);
-        printf("  " C_MENU_NUM BOLD "6." RESET "  " C_MENU_TEXT "Generate Report\n"          RESET);
-        printf("  " C_MENU_NUM BOLD "7." RESET "  " C_MENU_TEXT "View My Prediction History\n" RESET);
-        printf("\n");
-        printf("  " C_ERROR   BOLD "0." RESET "  " C_DIM "Logout\n" RESET);
-        printf("\n");
-
-        inputPrompt("Enter choice");
-        scanf("%d", &choice);
-        getchar();
+        int sel = getMenuSelection("STUDENT DASHBOARD", subtitle, options, 8);
+        if (sel == 7) choice = 0;
+        else choice = sel + 1;
 
         if (choice != 0) handleChoice(choice, session, &sp, &hasAssessment);
 
@@ -188,7 +179,7 @@ void handleChoice(int choice, Session *session, SkillProfile *sp, int *hasAssess
             case 6: {
                 printf("\n");
                 inputPrompt("Enter Student ID to view history");
-                scanf("%s", sid); getchar();
+                getStringInput(sid, sizeof(sid));
 
                 Student arr[100];
                 int n, i;
@@ -208,6 +199,14 @@ void handleChoice(int choice, Session *session, SkillProfile *sp, int *hasAssess
                 pauseScreen();
                 break;
             }
+
+            case 7:
+                showAdminDashboard();
+                break;
+
+            case 8:
+                exportStudentsToCSV();
+                break;
 
             default:
                 printError("Invalid choice. Please try again.");
