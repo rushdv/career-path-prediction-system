@@ -15,4 +15,7 @@ int  loadHistory(int studentRef, PredictionRecord arr[], int *n);
 void saveSkillProfile(SkillProfile *sp);
 int  loadSkillProfile(int studentRef, SkillProfile *sp);
 
+/* Export to CSV */
+void exportStudentsToCSV(void);
+
 #endif

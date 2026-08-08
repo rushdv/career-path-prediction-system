@@ -34,7 +34,7 @@ void analyzeGap(SkillProfile *sp, CareerPath *cp) {
     printf("  " C_HEADER BOLD "%-16s  %7s  %9s  %6s  %-22s\n" RESET,
            "Skill", "Yours", "Required", "Gap", "Status");
     printf("  " C_DIM);
-    { int d; for (d = 0; d < 66; d++) printf(BOX_H); }
+    { int d; for (d = 0; d < 68; d++) printf(BOX_H); }
     printf(RESET "\n\n");
 
     /* ── Per-skill rows ─────────────────────────────────── */
@@ -76,7 +76,7 @@ void analyzeGap(SkillProfile *sp, CareerPath *cp) {
     }
 
     printf("  " C_DIM);
-    { int d; for (d = 0; d < 66; d++) printf(BOX_H); }
+    { int d; for (d = 0; d < 68; d++) printf(BOX_H); }
     printf(RESET "\n\n");
 
     /* ── Summary box ────────────────────────────────────── */

@@ -1,23 +1,17 @@
 #include <stdio.h>
 #include "assessment.h"
 #include "colors.h"
+#include "input_handler.h"
 
 /* Collect one skill rating with inline bar preview */
 static float getSkillRating(const char *skillName) {
-    float val;
-    while (1) {
-        inputPrompt(skillName);
-        if (scanf("%f", &val) == 1 && val >= 0.0f && val <= 10.0f) {
-            getchar();
-            /* Show instant bar feedback */
-            printf("  " C_DIM "           ");
-            printSkillBar("", val, 20);
-            printf(RESET);
-            return val;
-        }
-        getchar();
-        printError("Please enter a number between 0 and 10.");
-    }
+    inputPrompt(skillName);
+    float val = getFloatInput(0.0f, 10.0f);
+    /* Show instant bar feedback */
+    printf("  " C_DIM "           ");
+    printSkillBar("", val, 20);
+    printf(RESET);
+    return val;
 }
 
 /* ── Run skill assessment ───────────────────────────────── */
