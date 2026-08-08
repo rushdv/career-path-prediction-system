@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <conio.h>
+#else
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
+#endif
 #include "input_handler.h"
 #include "colors.h"
 
@@ -48,6 +52,10 @@ int getIntInput(void) {
 }
 
 /* Helper to set terminal mode */
+#ifdef _WIN32
+static void disableRawMode(void) {}
+static void enableRawMode(void) {}
+#else
 static struct termios orig_termios;
 static void disableRawMode(void) {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
@@ -58,6 +66,7 @@ static void enableRawMode(void) {
     raw.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
+#endif
 
 int getMenuSelection(const char *title, const char *subtitle, const char **options, int num_options) {
     int selected = 0;
@@ -100,6 +109,19 @@ int getMenuSelection(const char *title, const char *subtitle, const char **optio
         printf("\n  " C_DIM "Use Up/Down arrows to navigate, Enter to select." RESET "\n");
         fflush(stdout);
         
+#ifdef _WIN32
+        int ch = _getch();
+        if (ch == 0 || ch == 224) {
+            int seq = _getch();
+            if (seq == 72) { selected--; } /* Up */
+            else if (seq == 80) { selected++; } /* Down */
+            
+            if (selected < 0) selected = num_options - 1;
+            if (selected >= num_options) selected = 0;
+        } else if (ch == '\r' || ch == '\n') {
+            return selected;
+        }
+#else
         enableRawMode();
         c = getchar();
         if (c == '\033') { 
@@ -124,5 +146,6 @@ int getMenuSelection(const char *title, const char *subtitle, const char **optio
         } else {
             disableRawMode();
         }
+#endif
     }
 }
