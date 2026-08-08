@@ -65,7 +65,7 @@ void printBanner(const char *text, int cols) {
    INPUT PROMPT
    ══════════════════════════════════════════════════════════ */
 void inputPrompt(const char *label) {
-    printf("  " C_PRIMARY BOLD "\xe2\x96\xb8 " RESET C_INFO "%s" RESET ": ", label);
+    printf("  " C_PRIMARY BOLD "> " RESET C_INFO "%s" RESET ": ", label);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -95,9 +95,9 @@ void printSkillBar(const char *label, float value, int width) {
     }
 
     printf(barColor);
-    for (i = 0; i < filled;         i++) printf("\xe2\x96\x88");  /* █ */
+    for (i = 0; i < filled;         i++) printf("#");  /* █ -> # */
     printf(C_DIM);
-    for (i = filled; i < width;     i++) printf("\xe2\x96\x91");  /* ░ */
+    for (i = filled; i < width;     i++) printf("-");  /* ░ -> - */
     printf(RESET "]");
 
     if (label != NULL && label[0] != '\0') {
@@ -124,9 +124,9 @@ void printScoreBar(float value, int width) {
 
     printf("[");
     printf(barColor);
-    for (i = 0; i < filled;     i++) printf("\xe2\x96\x88");
+    for (i = 0; i < filled;     i++) printf("#");
     printf(C_DIM);
-    for (i = filled; i < width; i++) printf("\xe2\x96\x91");
+    for (i = filled; i < width; i++) printf("-");
     printf(RESET "]");
     /* No newline — caller handles layout */
 }
@@ -154,7 +154,7 @@ void printWarning(const char *msg) {
 }
 
 void printInfo(const char *msg) {
-    printf("\n  " C_INFO BOLD "\xe2\x84\xb9" RESET "  " C_INFO "%s" RESET "\n\n", msg);
+    printf("\n  " C_INFO BOLD "i" RESET "  " C_INFO "%s" RESET "\n\n", msg);
 }
 
 /* ══════════════════════════════════════════════════════════

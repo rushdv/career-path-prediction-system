@@ -97,7 +97,7 @@ int getMenuSelection(const char *title, const char *subtitle, const char **optio
             int visible_len = 41;
             if (i == selected) {
                 snprintf(rowBuf, sizeof(rowBuf), 
-                         C_SUCCESS BOLD "\xe2\x96\xb6 %-38s " RESET, options[i]);
+                         C_SUCCESS BOLD "> %-38s " RESET, options[i]);
             } else {
                 snprintf(rowBuf, sizeof(rowBuf), 
                          "  %-38s ", options[i]);

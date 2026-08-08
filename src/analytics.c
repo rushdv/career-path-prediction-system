@@ -75,7 +75,7 @@ void showAdminDashboard(void) {
         
         if (bar_len > 0) {
             printf(C_SUCCESS);
-            for (int b = 0; b < bar_len; b++) printf("\xe2\x96\x88"); /* █ */
+            for (int b = 0; b < bar_len; b++) printf("#"); /* ASCII bar */
             printf(RESET);
         }
         printf(" " C_VALUE "%d" RESET "\n", career_counts[i]);
