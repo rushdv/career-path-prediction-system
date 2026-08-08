@@ -13,6 +13,10 @@ static void enableWindowsANSI(void) {
     if (!GetConsoleMode(hOut, &dwMode)) return;
     dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     SetConsoleMode(hOut, dwMode);
+    
+    /* Set console encoding to UTF-8 to render box drawing characters properly */
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
 }
 #endif
 
