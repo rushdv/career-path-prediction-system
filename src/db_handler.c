@@ -1,6 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#define MKDIR(path) _mkdir(path)
+#else
+#define MKDIR(path) mkdir(path, 0777)
+#endif
 #include <sqlite3.h>
 #include "db_handler.h"
 #include "colors.h"
@@ -8,6 +15,7 @@
 static sqlite3 *db = NULL;
 
 void db_init(void) {
+    MKDIR("data");
     if (sqlite3_open("data/career_system.db", &db) != SQLITE_OK) {
         printError("Failed to open database.");
         exit(1);
