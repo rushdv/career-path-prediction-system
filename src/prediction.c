@@ -1,178 +1,195 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include "prediction.h"
 #include "colors.h"
-#include "file_handler.h"
-/* Career path definitions
-   Skill order: [programming, networking, design, analytics, communication, security] */
-static CareerPath careers[NUM_CAREERS] = {
-    {
-        "Software Developer",
-        {0.35f, 0.10f, 0.15f, 0.20f, 0.10f, 0.10f},
-        {6.0f,  3.0f,  3.0f,  4.0f,  3.0f,  2.0f}
-    },
-      {
-        "Network Engineer",
-        {0.15f, 0.40f, 0.05f, 0.15f, 0.10f, 0.15f},
-        {3.0f,  7.0f,  2.0f,  3.0f,  3.0f,  4.0f}
-    },
-    {
-        "UI/UX Designer",
-        {0.15f, 0.05f, 0.40f, 0.15f, 0.20f, 0.05f},
-        {3.0f,  1.0f,  7.0f,  3.0f,  5.0f,  1.0f}
-    },
-    {
-        "Data Analyst",
-        {0.20f, 0.05f, 0.10f, 0.40f, 0.15f, 0.10f},
-        {4.0f,  2.0f,  2.0f,  7.0f,  4.0f,  2.0f}
-    },
-    {
-        "IT Project Manager",
-        {0.15f, 0.10f, 0.10f, 0.20f, 0.35f, 0.10f},
-        {3.0f,  3.0f,  3.0f,  4.0f,  7.0f,  2.0f}
-    },
-     {
-        "Cybersecurity Analyst",
-        {0.20f, 0.20f, 0.05f, 0.15f, 0.10f, 0.30f},
-        {4.0f,  5.0f,  1.0f,  3.0f,  3.0f,  7.0f}
-    }
-};
+#include "db_handler.h"
 
-/* Rank medal for top 3 */
-static const char *rankLabel(int rank) {
-    if (rank == 1) return SYM_STAR "  " C_RANK1 BOLD "#1";
-    if (rank == 2) return "   " C_RANK2 BOLD "#2";
-    if (rank == 3) return "   " C_RANK3      "#3";
-    return "      ";
+/* ── Provide list of available careers ──────────────────── */
+void getCareers(CareerPath *careers, int *count) {
+    *count = 0;
+    FILE *fp = fopen("data/careers.csv", "r");
+    if (!fp) {
+        printError("Could not open data/careers.csv! Ensure the file exists.");
+        return;
+    }
+
+    char line[256];
+    int first_line = 1;
+
+    while (fgets(line, sizeof(line), fp)) {
+        if (first_line) {
+            first_line = 0;
+            continue; /* Skip header */
+        }
+        
+        line[strcspn(line, "\r\n")] = 0;
+        if (strlen(line) == 0) continue;
+
+        /* Parse 13 CSV values */
+        char *token = strtok(line, ",");
+        if (!token) continue;
+
+        strcpy(careers[*count].name, token);
+        
+        token = strtok(NULL, ","); if(token) careers[*count].career_type = atoi(token);
+        token = strtok(NULL, ","); if(token) careers[*count].req_programming = atof(token);
+        token = strtok(NULL, ","); if(token) careers[*count].req_networking = atof(token);
+        token = strtok(NULL, ","); if(token) careers[*count].req_design = atof(token);
+        token = strtok(NULL, ","); if(token) careers[*count].req_analytics = atof(token);
+        token = strtok(NULL, ","); if(token) careers[*count].req_communication = atof(token);
+        token = strtok(NULL, ","); if(token) careers[*count].req_security = atof(token);
+        
+        token = strtok(NULL, ","); if(token) careers[*count].weight_ml_ai = atof(token);
+        token = strtok(NULL, ","); if(token) careers[*count].weight_web_dev = atof(token);
+        token = strtok(NULL, ","); if(token) careers[*count].weight_data_science = atof(token);
+        token = strtok(NULL, ","); if(token) careers[*count].weight_cybersecurity = atof(token);
+        token = strtok(NULL, ","); if(token) careers[*count].weight_cloud_computing = atof(token);
+
+        (*count)++;
+        if (*count >= NUM_CAREERS) break; /* Avoid overflowing if NUM_CAREERS is small */
+    }
+    fclose(fp);
 }
 
-/* ── Calculate weighted score ───────────────────────────── */
-float calculateScore(SkillProfile *sp, CareerPath *cp) {
-    float skills[6];
-    skills[0] = sp->programming;
-    skills[1] = sp->networking;
-    skills[2] = sp->design;
-    skills[3] = sp->analytics;
-    skills[4] = sp->communication;
-    skills[5] = sp->security;
+/* ── Calculate matching score ───────────────────────────── */
+float calculateScore(const SkillProfile *sp, const CareerPath *cp) {
+    /* 1. Core Engineering Competencies (Max 6.5 points / 65%) */
+    float req_total = cp->req_programming + cp->req_networking + cp->req_design +
+                      cp->req_analytics   + cp->req_communication + cp->req_security;
+    if (req_total < 1.0f) req_total = 1.0f;
 
-    float score = 0.0f;
-    int i;
-    for (i = 0; i < 6; i++) {
-        score += skills[i] * cp->weights[i];
+    float fulfilled = 0.0f;
+    float excess    = 0.0f;
+
+    #define EVAL_SKILL(user_val, req_val) do { \
+        if ((user_val) <= (req_val)) { \
+            fulfilled += (user_val); \
+        } else { \
+            fulfilled += (req_val); \
+            excess += ((user_val) - (req_val)); \
+        } \
+    } while(0)
+
+    EVAL_SKILL(sp->programming,   cp->req_programming);
+    EVAL_SKILL(sp->networking,    cp->req_networking);
+    EVAL_SKILL(sp->design,        cp->req_design);
+    EVAL_SKILL(sp->analytics,     cp->req_analytics);
+    EVAL_SKILL(sp->communication, cp->req_communication);
+    EVAL_SKILL(sp->security,      cp->req_security);
+    #undef EVAL_SKILL
+
+    float base_ratio = fulfilled / req_total;
+    float core_score = (base_ratio * 6.0f) + ((excess / req_total) * 0.5f);
+    if (core_score > 6.5f) core_score = 6.5f;
+
+    /* 2. Specialized Coursework Bonus (Max 1.5 points / 15%) */
+    float course_bonus = 0.0f;
+    if (sp->course_ml_ai)           course_bonus += cp->weight_ml_ai;
+    if (sp->course_web_dev)         course_bonus += cp->weight_web_dev;
+    if (sp->course_data_science)    course_bonus += cp->weight_data_science;
+    if (sp->course_cybersecurity)   course_bonus += cp->weight_cybersecurity;
+    if (sp->course_cloud_computing) course_bonus += cp->weight_cloud_computing;
+    if (course_bonus > 1.5f) course_bonus = 1.5f;
+
+    /* 3. Tech Stack & Practical Projects (Max 1.0 point / 10%) */
+    int tech_count = sp->lang_python + sp->lang_java + sp->lang_c_cpp + sp->lang_js +
+                     sp->lang_php + sp->lang_go + sp->lang_kotlin + sp->lang_sql +
+                     sp->tool_git + sp->tool_docker + sp->tool_linux + sp->tool_cloud +
+                     sp->tool_react_vue + sp->tool_tf_pytorch + sp->tool_figma + sp->tool_mongodb;
+    float tech_bonus = (tech_count * 0.035f);
+    if (tech_bonus > 0.5f) tech_bonus = 0.5f;
+
+    int proj_count = sp->proj_web + sp->proj_mobile + sp->proj_db + sp->proj_ai + sp->proj_security;
+    float proj_bonus = (proj_count * 0.10f);
+    if (proj_bonus > 0.5f) proj_bonus = 0.5f;
+
+    /* 4. Industry Experience & Extracurriculars (Max 0.5 points / 5%) */
+    float exp_bonus = 0.0f;
+    if (sp->exp_internship)       exp_bonus += 0.25f;
+    if (sp->exp_hackathon)        exp_bonus += 0.10f;
+    if (sp->exp_competitive_prog) exp_bonus += 0.10f;
+    if (sp->exp_research)         exp_bonus += 0.10f;
+    if (exp_bonus > 0.5f) exp_bonus = 0.5f;
+
+    /* 5. Career Goal / Primary Interest Alignment (Max 0.5 points / 5%) */
+    float interest_bonus = 0.0f;
+    if (sp->career_interest > 0 && sp->career_interest == cp->career_type) {
+        interest_bonus = 0.5f;
     }
-    return score;
-}
-/* ── Rank and display careers ───────────────────────────── */
-void rankCareers(SkillProfile *sp) {
-    float     scores[NUM_CAREERS];
-    CareerPath ranked[NUM_CAREERS];
-    int i, j;
 
-    for (i = 0; i < NUM_CAREERS; i++) {
-        ranked[i] = careers[i];
+    /* Final combined score (0.0 to 10.0) */
+    float total_score = core_score + course_bonus + tech_bonus + proj_bonus + exp_bonus + interest_bonus;
+    if (total_score > 10.0f) total_score = 10.0f;
+    if (total_score < 0.0f)  total_score = 0.0f;
+
+    return total_score;
+}
+
+/* ── Rank and display top careers ───────────────────────── */
+void rankCareers(const SkillProfile *sp) {
+    CareerPath careers[NUM_CAREERS];
+    int count;
+    getCareers(careers, &count);
+
+    float scores[NUM_CAREERS];
+    for (int i = 0; i < count; i++) {
         scores[i] = calculateScore(sp, &careers[i]);
     }
 
-    /* Bubble sort descending */
-    for (i = 0; i < NUM_CAREERS - 1; i++) {
-        for (j = 0; j < NUM_CAREERS - 1 - i; j++) {
+    /* Bubble sort to rank careers (descending) */
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = 0; j < count - 1 - i; j++) {
             if (scores[j] < scores[j + 1]) {
-                float      ts = scores[j];  scores[j]  = scores[j+1];  scores[j+1]  = ts;
-                CareerPath tc = ranked[j];  ranked[j]  = ranked[j+1];  ranked[j+1]  = tc;
+                float tempScore = scores[j];
+                scores[j] = scores[j + 1];
+                scores[j + 1] = tempScore;
+
+                CareerPath tempPath = careers[j];
+                careers[j] = careers[j + 1];
+                careers[j + 1] = tempPath;
             }
         }
     }
 
     CLEAR_SCREEN();
     printf("\n");
-    printBanner("  CAREER PATH PREDICTION RESULTS  ", 34);
+    printBanner("CAREER PREDICTION RESULTS", 25);
     printf("\n");
 
-    for (i = 0; i < NUM_CAREERS; i++) {
-        /* Row color */
-        if      (i == 0) printf(C_RANK1);
-        else if (i == 1) printf(C_RANK2);
-        else if (i == 2) printf(C_RANK3);
-        else             printf(C_DIM);
+    printf(UI_PAD "%sBased on your skill profile, here are your top career matches:%s\n\n",
+           C_DIM, RESET);
 
-        /* Each row: "  " rank(6) "  " name(%-22s) "  " bar(14) "  " score
-           rank label display widths:
-             rank 1: SYM_STAR(1)+"  "+C_RANK1+BOLD+"#1" = 1+2+2 = 5 display
-             rank 2: "   "+"#2"                          = 3+2   = 5 display
-             rank 3: "   "+"#3"                          = 3+2   = 5 display
-             others: "      "                            = 6     = 6 display
-           Use fixed 6-char display slot for rank label. */
-        printf("  %s" RESET "  " C_VALUE "%-22s" RESET "  ",
-               rankLabel(i + 1), ranked[i].name);
+    const char *rankColors[] = { C_RANK1,    C_RANK2,    C_RANK3   };
+    const char *rankStars[]  = { SYM_RANK1,  SYM_RANK2,  SYM_RANK3 };
+    const char *rankTags[]   = { "BEST MATCH",  "2nd Match",  "3rd Match" };
+
+    for (int i = 0; i < 3 && i < count; i++) {
+        float pct = scores[i] * 10.0f;
+
+        /* Rank header line */
+        printf(UI_PAD "%s%s%s  %s#%d%s  %s%s%s\n",
+               CC(rankColors[i]), rankStars[i], CC(RESET),
+               CC(BOLD), i + 1, CC(RESET),
+               CC(C_DIM), rankTags[i], CC(RESET));
+
+        /* Career name + score bar + percentage */
+        printf(UI_PAD "  %s%s%-34s%s  ",
+               CC(rankColors[i]), CC(BOLD), careers[i].name, CC(RESET));
         printScoreBar(scores[i], 14);
-        printf("  " BOLD "%.2f/10" RESET "\n", scores[i]);
-
-        /* Extra blank line between items so bars don't touch */
-        if (i < NUM_CAREERS - 1 && i != 0)
-            printf("\n");
-
-        if (i == 0) {
-            /* Divider after #1 */
-            printf("  " C_DIM);
-            int d; for (d = 0; d < 58; d++) printf(BOX_H);
-            printf(RESET "\n\n");
-        }
+        printf("  %s%s%.0f%%%s\n\n",
+               CC(rankColors[i]), CC(BOLD), pct, CC(RESET));
     }
-    printf("\n");
 
-    /* ── Recommendation box ─────────────────────────────────
-       Uses boxRowRaw() so padding is always exact.
-       Row 1: "▶  Top Recommendation : <name>"
-              SYM_ARROW = ▶ (1 display, 3 bytes)
-              "  Top Recommendation : " = 23 chars
-              name = up to ~22 chars
-       Row 2: "   Weighted Score     : X.XX / 10.00" = 36 chars
-    ── */
-    {
-        char plain1[80], colored1[256];
-        /* snprintf counts bytes; ▶ = 3 bytes but 1 display char → subtract 2 */
-        int blen1 = snprintf(plain1, sizeof(plain1),
-                             "\xe2\x96\xb6  Top Recommendation : %s", ranked[0].name);
-        int dlen1 = blen1 - 2; /* adjust for ▶ multi-byte */
-        snprintf(colored1, sizeof(colored1),
-                 C_ACCENT BOLD SYM_ARROW RESET
-                 C_VALUE "  Top Recommendation : " RESET
-                 C_VALUE BOLD "%s" RESET, ranked[0].name);
+    printHRule(BOX_WIDTH + 4);
 
-        char plain2[48], colored2[128];
-        int dlen2 = snprintf(plain2, sizeof(plain2),
-                             "   Weighted Score     : %.2f / 10.00", scores[0]);
-        snprintf(colored2, sizeof(colored2),
-                 C_DIM "   Weighted Score     : " RESET
-                 C_SUCCESS BOLD "%.2f / 10.00" RESET, scores[0]);
-
-        boxTop();
-        boxRowRaw(colored1, dlen1);
-        boxRowRaw(colored2, dlen2);
-        boxBottom();
-    }
-    printf("\n");
-
-    /* Save to history */
+    /* Save best result to history */
     PredictionRecord pr;
     pr.studentRef = sp->studentRef;
-    pr.score      = scores[0];
-    strncpy(pr.topCareer, ranked[0].name, sizeof(pr.topCareer) - 1);
+    strncpy(pr.topCareer, careers[0].name, sizeof(pr.topCareer) - 1);
     pr.topCareer[sizeof(pr.topCareer) - 1] = '\0';
-
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    strftime(pr.timestamp, sizeof(pr.timestamp), "%Y-%m-%d %H:%M:%S", t);
-    savePrediction(&pr);
+    pr.score = scores[0];
+    db_save_prediction(&pr);
 
     pauseScreen();
-}
-
-/* ── Expose careers for other modules ───────────────────── */
-void getCareers(CareerPath out[], int *count) {
-    int i;
-    for (i = 0; i < NUM_CAREERS; i++) out[i] = careers[i];
-    *count = NUM_CAREERS;
 }

@@ -14,10 +14,16 @@ float getFloatInput(float min, float max);
 /* Robust integer input, prompts until a valid int is given */
 int getIntInput(void);
 
+/* Robust integer input within range [min, max] */
+int getIntInputRange(int min, int max);
+
 /* Interactive arrow-key menu selection
  * Returns the index (0-based) of the selected option, or -1 if aborted/error.
  */
 int getMenuSelection(const char *title, const char *subtitle, const char **options, int num_options);
+
+/* Restores terminal state (used in SIGINT handler) */
+void restoreTerminal(void);
 
 #ifdef __cplusplus
 }

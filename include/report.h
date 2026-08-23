@@ -5,7 +5,6 @@
 #include "assessment.h"
 #include "prediction.h"
 
-void generateReport(Student *s, SkillProfile *sp,
-                    CareerPath ranked[], float scores[]);
+void generateReport(const Student *st, const SkillProfile *sp, CareerPath *cars, float *scores);
 
 #endif

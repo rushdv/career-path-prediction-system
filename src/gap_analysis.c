@@ -1,106 +1,179 @@
 #include <stdio.h>
+#include <string.h>
 #include "gap_analysis.h"
 #include "colors.h"
+#include "assessment.h"
 
-void analyzeGap(SkillProfile *sp, CareerPath *cp) {
-    const char *skillNames[6] = {
-        "Programming",
-        "Networking",
-        "Design",
-        "Analytics",
-        "Communication",
-        "Security"
-    };
+/* ══════════════════════════════════════════════════════════
+   GAP BAR
+   Shows user's score vs target on a 0-10 scale.
+   - Filled portion up to min(current, target): green if OK, red if below
+   - If current > target: extra filled portion in cyan (excess)
+   - Target marker ▼ shown above the bar at the correct position
+   Width = number of bar cells (each cell = 1.0 point on 10.0 scale)
+   ══════════════════════════════════════════════════════════ */
+static void printGapBar(float current, float required, int width) {
+    /* cell i represents the range (i * 10/width) to ((i+1) * 10/width) */
+    int userCell = (int)((current  / 10.0f) * (float)width);
+    int reqCell  = (int)((required / 10.0f) * (float)width);
+    if (userCell > width) userCell = width;
+    if (reqCell  > width) reqCell  = width;
+    if (userCell < 0)     userCell = 0;
+    if (reqCell  < 0)     reqCell  = 0;
 
-    float skills[6];
-    skills[0] = sp->programming;
-    skills[1] = sp->networking;
-    skills[2] = sp->design;
-    skills[3] = sp->analytics;
-    skills[4] = sp->communication;
-    skills[5] = sp->security;
+    int ok = (current >= required);
 
+    /* ── top marker line ─────────────────────────────────
+       Print a ▼ at the target position, spaces elsewhere   */
+    printf("  ");   /* align with bar bracket */
+    for (int i = 0; i < width; i++) {
+        if (i == reqCell) {
+            printf("%s%s%s", CC(C_WARNING), CC(BOLD), "v");  /* target marker */
+        } else {
+            printf(" ");
+        }
+    }
+    printf("\n");
+
+    /* ── bar ─────────────────────────────────────────────
+       [  filled  |  gap / excess  ]                        */
+    fputs(UI_PAD "  ", stdout);
+    printf("%s[%s", CC(C_BORDER2), CC(RESET));
+
+    for (int i = 0; i < width; i++) {
+        if (ok) {
+            /* user meets or exceeds target */
+            if (i < reqCell) {
+                /* met requirement zone — green */
+                printf("%s", CC(C_SUCCESS));
+                fputs(SYM_BAR_F, stdout);
+            } else if (i < userCell) {
+                /* excess zone — cyan */
+                printf("%s", CC(C_ACCENT));
+                fputs(SYM_BAR_F, stdout);
+            } else {
+                printf("%s", CC(C_DIM));
+                fputs(SYM_BAR_E, stdout);
+            }
+        } else {
+            /* user below target */
+            if (i < userCell) {
+                /* what user has — orange/red */
+                if (current >= 6.0f)      printf("%s", CC(C_WARNING));
+                else if (current >= 3.5f) printf("%s", "\033[38;5;208m");
+                else                      printf("%s", CC(C_ERROR));
+                fputs(SYM_BAR_F, stdout);
+            } else if (i < reqCell) {
+                /* gap zone — dim red */
+                printf("%s", CC(C_ERROR));
+                fputs(SYM_BAR_E, stdout);
+            } else {
+                printf("%s", CC(C_DIM));
+                fputs(SYM_BAR_E, stdout);
+            }
+        }
+    }
+    printf("%s]%s", CC(C_BORDER2), CC(RESET));
+}
+
+/* ══════════════════════════════════════════════════════════
+   MAIN GAP ANALYSIS SCREEN
+   ══════════════════════════════════════════════════════════ */
+void analyzeGap(const SkillProfile *sp, const CareerPath *cp) {
     CLEAR_SCREEN();
     printf("\n");
-
-    /* Dynamic banner title — cp->name is ASCII so byte len = display len */
-    char title[60];
-    int tlen = snprintf(title, sizeof(title), "  GAP ANALYSIS  \xe2\x80\x94  %s  ", cp->name);
-    /* \xe2\x80\x94 is em-dash: 3 bytes, 1 display char → subtract 2 hidden bytes */
-    printBanner(title, tlen - 2);
+    printBanner("SKILL GAP ANALYSIS", 18);
     printf("\n");
 
-    /* ── Column header ──────────────────────────────────── */
-    printf("  " C_HEADER BOLD "%-16s  %7s  %9s  %6s  %-22s\n" RESET,
-           "Skill", "Yours", "Required", "Gap", "Status");
-    printf("  " C_DIM);
-    { int d; for (d = 0; d < 68; d++) printf(BOX_H); }
-    printf(RESET "\n\n");
+    printf(UI_PAD "%sAnalysing against:%s %s%s%s%s\n\n",
+           CC(C_DIM), CC(RESET), CC(C_ACCENT), CC(BOLD), cp->name, CC(RESET));
 
-    /* ── Per-skill rows ─────────────────────────────────── */
-    int i;
-    int hasGap = 0;
+    /* ── Legend ──────────────────────────────────────────── */
+    printf(UI_PAD "  %s%s%s Met  ", CC(C_SUCCESS), SYM_BAR_F, CC(RESET));
+    printf("%s%s%s Excess  ", CC(C_ACCENT), SYM_BAR_F, CC(RESET));
+    printf("%s%s%s Gap  ", CC(C_ERROR), SYM_BAR_E, CC(RESET));
+    printf("%s%sv%s Target\n\n", CC(C_WARNING), CC(BOLD), CC(RESET));
 
-    for (i = 0; i < 6; i++) {
-        float gap = cp->minRequired[i] - skills[i];
+    const char *skills[] = {
+        "Programming", "Networking", "Design",
+        "Analytics",   "Communication", "Security"
+    };
+    int levels[] = {
+        sp->level_programming, sp->level_networking, sp->level_design,
+        sp->level_analytics,   sp->level_communication, sp->level_security
+    };
+    float current[] = {
+        sp->programming, sp->networking, sp->design,
+        sp->analytics,   sp->communication, sp->security
+    };
+    float required[] = {
+        cp->req_programming, cp->req_networking, cp->req_design,
+        cp->req_analytics,   cp->req_communication, cp->req_security
+    };
 
-        /* Skill name */
-        printf("  " C_INFO "%-16s" RESET "  ", skillNames[i]);
+    int gaps_found = 0;
 
-        /* Your score — colour-coded */
-        if      (skills[i] >= 7.0f) printf(C_SUCCESS BOLD);
-        else if (skills[i] >= 4.0f) printf(C_WARNING BOLD);
-        else                         printf(C_ERROR   BOLD);
-        printf("%5.1f" RESET "    ", skills[i]);
+    for (int i = 0; i < 6; i++) {
+        int ok = (current[i] >= required[i]);
+        float gap = required[i] - current[i];
 
-        /* Required score */
-        printf(C_VALUE "%7.1f" RESET "  ", cp->minRequired[i]);
+        /* ── Skill name + your rating ─────────────────── */
+        char levelStr[32];
+        snprintf(levelStr, sizeof(levelStr), "%s (%.1f)", levelName(levels[i]), current[i]);
 
-        /* Gap + status */
-        if (gap > 0) {
-            printf(C_ERROR   BOLD "%+5.1f" RESET "  ", -gap);
-            printf(C_NEEDS   BOLD "  " SYM_WARN "  NEEDS IMPROVEMENT" RESET "\n");
-            hasGap = 1;
+        printf(UI_PAD "%s%-15s%s  %s%-18s%s  target: %s%.1f%s\n",
+               ok ? CC(C_SUCCESS) : CC(C_INFO),
+               skills[i], CC(RESET),
+               CC(C_VALUE), levelStr, CC(RESET),
+               CC(C_WARNING), required[i], CC(RESET));
+
+        /* ── Gap bar (with target marker on top) ─────── */
+        printGapBar(current[i], required[i], 20);
+
+        /* ── Status badge ─────────────────────────────── */
+        printf("  ");
+        if (ok) {
+            printf("%s%s[  OK  ]%s\n\n", CC(C_SUCCESS), CC(BOLD), CC(RESET));
         } else {
-            printf(C_SUCCESS BOLD "%+5.1f" RESET "  ", -gap);
-            printf(C_OK      BOLD "  " SYM_CHECK "  OK" RESET "\n");
+            printf("%s%s[ NEED +%.1f ]%s\n\n", CC(C_ERROR), CC(BOLD), gap, CC(RESET));
+            gaps_found++;
         }
-
-        /* Mini progress bars */
-        printf("  " C_DIM "                 Your: " RESET);
-        printSkillBar("", skills[i], 16);
-
-        printf("  " C_DIM "                 Need: " RESET);
-        printSkillBar("", cp->minRequired[i], 16);
-        printf("\n");
     }
 
-    printf("  " C_DIM);
-    { int d; for (d = 0; d < 68; d++) printf(BOX_H); }
-    printf(RESET "\n\n");
+    printHRule(BOX_WIDTH + 4);
+    printf("\n");
 
-    /* ── Summary box ────────────────────────────────────── */
-    if (!hasGap) {
-        /* "✔  You meet ALL requirements for <name>"
-           SYM_CHECK = ✔ (1 display, 3 bytes) → subtract 2 from snprintf byte count */
-        char plain[64], colored[256];
-        int blen = snprintf(plain, sizeof(plain),
-                            "\xe2\x9c\x94  You meet ALL requirements for %s", cp->name);
-        int dlen = blen - 2; /* UTF-8 adjustment for ✔ */
-        snprintf(colored, sizeof(colored),
-                 C_SUCCESS BOLD SYM_CHECK
-                 "  You meet ALL requirements for " RESET
-                 C_VALUE BOLD "%s" RESET, cp->name);
-
-        boxTop();
-        boxRowRaw(colored, dlen);
-        boxBottom();
-        printf("\n");
+    /* ── Result / Action Plan ─────────────────────────── */
+    if (gaps_found == 0) {
+        printSuccess("You meet or exceed all requirements for this career path!");
     } else {
-        printf("  " C_WARNING SYM_WARN BOLD
-               "  Focus on the skills marked "
-               C_NEEDS "[NEEDS IMPROVEMENT]" RESET
-               C_WARNING " to close your gaps." RESET "\n\n");
+        printSectionHeader("Action Plan & Recommended Resources");
+
+        const char *courses[] = {
+            "Coursera: Python for Everybody  |  LeetCode DSA Practice",
+            "Cisco CCNA Guide  |  Network+ Certification",
+            "CalArts UI/UX Specialization  |  Figma Mastery Course",
+            "Google Data Analytics Certificate  |  SQL for Data Science",
+            "LinkedIn Learning: Technical Communication",
+            "CompTIA Security+  |  TryHackMe Cyber Defense Path"
+        };
+
+        for (int i = 0; i < 6; i++) {
+            if (current[i] < required[i]) {
+                float g = required[i] - current[i];
+                printf(UI_PAD "%s%s%s  %s%-15s%s  "
+                       "yours: %s%.1f%s  target: %s%.1f%s  "
+                       "%sneeds +%.1f pts%s\n",
+                       CC(C_ERROR), SYM_CROSS, CC(RESET),
+                       CC(C_INFO), skills[i], CC(RESET),
+                       CC(C_VALUE), current[i], CC(RESET),
+                       CC(C_ACCENT), required[i], CC(RESET),
+                       CC(C_WARNING), g, CC(RESET));
+                printf(UI_PAD "    %s%s%s  %s%s%s\n\n",
+                       CC(C_PRIMARY), SYM_ARROW, CC(RESET),
+                       CC(C_MUTED), courses[i], CC(RESET));
+            }
+        }
     }
 
     pauseScreen();

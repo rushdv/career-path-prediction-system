@@ -5,6 +5,7 @@ typedef struct {
     int   id;
     char  name[50];
     char  studentID[20];
+    char  password[65];
     float cgpa;
     char  department[30];
     int   isActive;      /* 1 = active, 0 = deleted */
@@ -17,5 +18,6 @@ void updateStudent(const char *studentID);
 void deleteStudent(const char *studentID);
 void listAllStudents(void);
 void searchByName(const char *name);
+void hashPassword(const char *input, char *output);
 
 #endif
