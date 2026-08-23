@@ -1,72 +1,77 @@
 #ifndef COLORS_H
 #define COLORS_H
 
-#include <stdio.h>
-#include <stdlib.h>
+/* ANSI Color Codes */
+#define RESET      "\033[0m"
+#define BOLD       "\033[1m"
+#define DIM        "\033[2m"
 
-/* Basic console helpers and placeholder color macros */
-#ifdef _WIN32
-#define CLEAR_SCREEN() system("cls")
-#else
+#define C_PRIMARY  "\033[38;5;39m"   // Bright Blue
+#define C_ACCENT   "\033[38;5;208m"  // Orange
+#define C_SUCCESS  "\033[38;5;46m"   // Green
+#define C_WARNING  "\033[38;5;226m"  // Yellow
+#define C_ERROR    "\033[38;5;196m"  // Red
+#define C_INFO     "\033[38;5;51m"   // Cyan
+#define C_VALUE    "\033[38;5;213m"  // Pink
+#define C_DIM      "\033[38;5;240m"  // Gray
+#define C_BORDER   "\033[38;5;244m"  // Light Gray
+#define C_TITLE    "\033[38;5;117m"  // Sky Blue
+#define C_HEADER   "\033[38;5;147m"  // Lavender
+#define C_MENU_NUM "\033[38;5;141m"  // Purple
+#define C_MENU_TEXT "\033[38;5;252m" // White-ish
+
+/* Career Ranking Colors */
+#define C_RANK1    "\033[38;5;220m"  // Gold
+#define C_RANK2    "\033[38;5;250m"  // Silver
+#define C_RANK3    "\033[38;5;208m"  // Bronze
+
+/* Gap Analysis Status Colors */
+#define C_OK       "\033[38;5;46m"   // Green (same as SUCCESS)
+#define C_NEEDS    "\033[38;5;196m"  // Red   (same as ERROR)
+
+/* Box Drawing Characters (single line) */
+#define BOX_TL     "┌"
+#define BOX_TR     "┐"
+#define BOX_BL     "└"
+#define BOX_BR     "┘"
+#define BOX_V      "│"
+#define BOX_H      "─"
+
+/* Box Drawing Characters (double line) */
+#define DBL_TL     "╔"
+#define DBL_TR     "╗"
+#define DBL_BL     "╚"
+#define DBL_BR     "╝"
+#define DBL_V      "║"
+#define DBL_H      "═"
+
+/* Symbols */
+#define SYM_ARROW  "→"
+#define SYM_CHECK  "✓"
+#define SYM_CROSS  "✗"
+#define SYM_STAR   "★"
+#define SYM_WARN   "⚠"
+
+/* Box Dimensions */
+#define BOX_WIDTH  48
+#define BOX_INNER  44  // BOX_WIDTH - 4 (2 padding left + 2 padding right)
+
+/* Screen Management */
 #define CLEAR_SCREEN() printf("\033[2J\033[H")
-#endif
 
-#define RESET ""
-#define BOLD ""
-
-/* Color/style placeholders (no-op strings) */
-#define C_BORDER ""
-#define C_HEADER ""
-#define C_DIM ""
-#define C_INFO ""
-#define C_VALUE ""
-#define C_ACCENT ""
-#define C_SUCCESS ""
-#define C_WARNING ""
-#define C_ERROR ""
-#define C_NEEDS ""
-#define C_MENU_NUM ""
-#define C_MENU_TEXT ""
-
-/* Some code uses bare DIM or other short aliases */
-#define DIM C_DIM
-
-/* Title and rank color aliases */
-#define C_TITLE ""
-#define C_RANK1 ""
-#define C_RANK2 ""
-#define C_RANK3 ""
-#define C_OK ""
-
-/* Symbols used in UI */
-#define SYM_WARN "[!]"
-#define SYM_STAR "[*]"
-#define SYM_ARROW "->"
-#define SYM_CHECK "[\xE2\x9C\x94]"
-
-
-/* Box drawing fallbacks (ASCII safe) */
-#define BOX_TL "+"
-#define BOX_TR "+"
-#define BOX_BL "+"
-#define BOX_BR "+"
-#define BOX_H "-"
-#define BOX_V "|"
-
-/* Double border fallbacks used in some prints */
-#define DBL_TL "+"
-#define DBL_TR "+"
-#define DBL_H "="
-#define DBL_V "|"
-
-/* Helper function prototypes used across the project */
-void pauseScreen(void);
-void printBanner(const char *title, int width);
+/* Helper Functions */
+void boxTop(void);
+void boxBottom(void);
+void boxRowRaw(const char *text, int displayLen);
+void printBanner(const char *text, int cols);
+void inputPrompt(const char *label);
 void printSkillBar(const char *label, float value, int width);
+void printScoreBar(float value, int width);
+void printKV(const char *key, const char *value);
+void printSuccess(const char *msg);
 void printError(const char *msg);
 void printWarning(const char *msg);
 void printInfo(const char *msg);
-void printSuccess(const char *msg);
-void inputPrompt(const char *prompt);
+void pauseScreen(void);
 
 #endif

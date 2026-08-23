@@ -5,6 +5,7 @@
 #include "colors.h"
 #include "file_handler.h"
 #include "student.h"
+#include "input_handler.h"
 
 Session login(void)
 {
@@ -25,11 +26,11 @@ Session login(void)
            "                                                " C_BORDER DBL_V RESET "\n");
 
     printf(C_BORDER "  " DBL_V RESET
-           C_TITLE BOLD "     \xe2\x97\x8f  CAREER PATH PREDICTION SYSTEM  \xe2\x97\x8f     " RESET
+           C_TITLE BOLD "      \xe2\x97\x8f  CAREER PATH PREDICTION SYSTEM  \xe2\x97\x8f       " RESET
            C_BORDER DBL_V RESET "\n");
 
     printf(C_BORDER "  " DBL_V RESET
-           C_DIM "         Northern University Bangladesh          " RESET
+           C_DIM "         Northern University Bangladesh         " RESET
            C_BORDER DBL_V RESET "\n");
 
     printf(C_BORDER "  " DBL_V RESET
@@ -41,34 +42,16 @@ Session login(void)
            DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H
            DBL_H DBL_H DBL_H DBL_H DBL_BR RESET "\n\n");
 
-    /* ── Login menu box ─────────────────────────────────── */
-    printf(C_BORDER "  " BOX_TL);
-    int _i; for (_i = 0; _i < 48; _i++) printf(BOX_H);
-    printf(BOX_TR RESET "\n");
-
-    printf(C_BORDER "  " BOX_V RESET "  "
-           C_MENU_NUM BOLD "1." RESET "  " C_MENU_TEXT "Admin Login                              " RESET
-           C_BORDER BOX_V RESET "\n");
-
-    printf(C_BORDER "  " BOX_V RESET "  "
-           C_MENU_NUM BOLD "2." RESET "  " C_MENU_TEXT "Student Login                            " RESET
-           C_BORDER BOX_V RESET "\n");
-
-    printf(C_BORDER "  " BOX_V RESET "  "
-           C_MENU_NUM BOLD "3." RESET "  " C_MENU_TEXT "Register as New Student                  " RESET
-           C_BORDER BOX_V RESET "\n");
-
-    printf(C_BORDER "  " BOX_V RESET "  "
-           C_MENU_NUM BOLD "0." RESET "  " C_MENU_TEXT "Exit                                     " RESET
-           C_BORDER BOX_V RESET "\n");
-
-    printf(C_BORDER "  " BOX_BL);
-    for (_i = 0; _i < 48; _i++) printf(BOX_H);
-    printf(BOX_BR RESET "\n\n");
-
-    inputPrompt("Enter your choice");
-    scanf("%d", &choice);
-    getchar();
+    const char *menuOptions[] = {
+        "Admin Login",
+        "Student Login",
+        "Register as New Student",
+        "Exit"
+    };
+    int sel = getMenuSelection("LOGIN", NULL, menuOptions, 4);
+    
+    if (sel == 3) choice = 0;
+    else choice = sel + 1;
 
     /* ── Handlers ────────────────────────────────────────── */
     if (choice == 0)
@@ -82,17 +65,15 @@ Session login(void)
         char pass[30];
         printf("\n");
         boxTop();
-        printf(C_BORDER BOX_V RESET "   " C_TITLE BOLD "  ADMIN AUTHENTICATION  " RESET
-               "%*s" C_BORDER BOX_V RESET "\n", 23, "");
+        boxRowRaw(C_TITLE BOLD "  ADMIN AUTHENTICATION  " RESET, 24);
         boxBottom();
 
         printf("\n");
         inputPrompt("Enter Admin Password");
         /* Hide password input */
         printf("\033[8m"); /* conceal */
-        scanf("%s", pass);
+        getStringInput(pass, sizeof(pass));
         printf("\033[28m"); /* reveal */
-        getchar();
 
         if (strcmp(pass, ADMIN_PASSWORD) != 0)
         {
@@ -110,14 +91,12 @@ Session login(void)
     {
         printf("\n");
         boxTop();
-        printf(C_BORDER BOX_V RESET "   " C_TITLE BOLD "  STUDENT AUTHENTICATION  " RESET
-               "%*s" C_BORDER BOX_V RESET "\n", 21, "");
+        boxRowRaw(C_TITLE BOLD "  STUDENT AUTHENTICATION  " RESET, 26);
         boxBottom();
 
         printf("\n");
         inputPrompt("Enter your Student ID");
-        scanf("%s", s.studentID);
-        getchar();
+        getStringInput(s.studentID, sizeof(s.studentID));
 
         Student arr[100];
         int n = 0, found = 0, i;
@@ -129,6 +108,7 @@ Session login(void)
                 strcmp(arr[i].studentID, s.studentID) == 0)
             {
                 found = 1;
+                s.studentNumId = arr[i].id;  /* store numeric PK for file lookups */
                 printf("\n");
                 printSuccess("Access Granted!");
                 printf("  " C_INFO "Welcome back, " RESET C_VALUE BOLD "%s" RESET "\n\n",
@@ -153,8 +133,22 @@ Session login(void)
         printInfo("Registration complete! Now login with your Student ID.");
         printf("\n");
         inputPrompt("Enter your Student ID");
-        scanf("%s", s.studentID);
-        getchar();
+        getStringInput(s.studentID, sizeof(s.studentID));
+
+        /* Look up numeric id for the newly registered student */
+        {
+            Student arr2[100];
+            int n2 = 0, i2;
+            s.studentNumId = 0;
+            loadAllStudents(arr2, &n2);
+            for (i2 = 0; i2 < n2; i2++) {
+                if (arr2[i2].isActive == 1 &&
+                    strcmp(arr2[i2].studentID, s.studentID) == 0) {
+                    s.studentNumId = arr2[i2].id;
+                    break;
+                }
+            }
+        }
     }
 
     else

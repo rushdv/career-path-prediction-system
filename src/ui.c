@@ -8,6 +8,8 @@
 #include "gap_analysis.h"
 #include "report.h"
 #include "file_handler.h"
+#include "input_handler.h"
+#include "analytics.h"
 
 /* ── Shared: print history table ────────────────────────── */
 static void printHistory(int studentRef, const char *heading) {
@@ -53,27 +55,23 @@ void showAdminMenu(void) {
     strcpy(session.studentID, "ADMIN");
 
     int choice;
+    const char *options[] = {
+        "View All Students",
+        "View Student Profile",
+        "Update Student Profile",
+        "Delete Student",
+        "Search Student by Name",
+        "View Prediction History",
+        "View Analytics Dashboard",
+        "Export Data to CSV",
+        "Logout"
+    };
     do {
-        CLEAR_SCREEN();
-        printf("\n");
-        printBanner("  ADMIN DASHBOARD  ", 19);
-        printf("\n");
+        int sel = getMenuSelection("ADMIN DASHBOARD", NULL, options, 9);
+        if (sel == 8) choice = 0;
+        else choice = sel + 1;
 
-        printf("  " C_MENU_NUM BOLD "1." RESET "  " C_MENU_TEXT "View All Students\n"      RESET);
-        printf("  " C_MENU_NUM BOLD "2." RESET "  " C_MENU_TEXT "View Student Profile\n"   RESET);
-        printf("  " C_MENU_NUM BOLD "3." RESET "  " C_MENU_TEXT "Update Student Profile\n" RESET);
-        printf("  " C_MENU_NUM BOLD "4." RESET "  " C_MENU_TEXT "Delete Student\n"         RESET);
-        printf("  " C_MENU_NUM BOLD "5." RESET "  " C_MENU_TEXT "Search Student by Name\n" RESET);
-        printf("  " C_MENU_NUM BOLD "6." RESET "  " C_MENU_TEXT "View Prediction History\n"RESET);
-        printf("\n");
-        printf("  " C_ERROR   BOLD "0." RESET "  " C_DIM "Logout\n" RESET);
-        printf("\n");
-
-        inputPrompt("Enter choice");
-        scanf("%d", &choice);
-        getchar();
-
-        if (choice != 0) handleChoice(choice, &session);
+        if (choice != 0) handleChoice(choice, &session, NULL, NULL);
 
     } while (choice != 0);
 
@@ -87,28 +85,41 @@ void showAdminMenu(void) {
    ══════════════════════════════════════════════════════════ */
 void showStudentMenu(Session *session) {
     int choice;
+
+    /* ── Skill profile state lives here, not inside handleChoice ── */
+    SkillProfile sp;
+    int hasAssessment = 0;
+
+    /* Auto-load saved assessment from previous session */
+    if (session->studentNumId > 0 &&
+        loadSkillProfile(session->studentNumId, &sp)) {
+        hasAssessment = 1;
+    }
+
+    const char *options[] = {
+        "View My Profile",
+        "Update My Profile",
+        "Run Skill Assessment",
+        "View Career Prediction",
+        "View Gap Analysis",
+        "Generate Report",
+        "View My Prediction History",
+        "Logout"
+    };
+
     do {
-        CLEAR_SCREEN();
-        printf("\n");
-        printBanner("  STUDENT DASHBOARD  ", 21);
-        printf("\n");
+        char subtitle[256];
+        if (hasAssessment) {
+            snprintf(subtitle, sizeof(subtitle), "  " C_SUCCESS BOLD SYM_CHECK RESET "  " C_DIM "Skill profile loaded" RESET);
+        } else {
+            snprintf(subtitle, sizeof(subtitle), "  " C_WARNING BOLD SYM_WARN RESET "  " C_DIM "No skill profile — run option 3 first" RESET);
+        }
 
-        printf("  " C_MENU_NUM BOLD "1." RESET "  " C_MENU_TEXT "View My Profile\n"          RESET);
-        printf("  " C_MENU_NUM BOLD "2." RESET "  " C_MENU_TEXT "Update My Profile\n"        RESET);
-        printf("  " C_MENU_NUM BOLD "3." RESET "  " C_MENU_TEXT "Run Skill Assessment\n"     RESET);
-        printf("  " C_MENU_NUM BOLD "4." RESET "  " C_MENU_TEXT "View Career Prediction\n"   RESET);
-        printf("  " C_MENU_NUM BOLD "5." RESET "  " C_MENU_TEXT "View Gap Analysis\n"        RESET);
-        printf("  " C_MENU_NUM BOLD "6." RESET "  " C_MENU_TEXT "Generate Report\n"          RESET);
-        printf("  " C_MENU_NUM BOLD "7." RESET "  " C_MENU_TEXT "View My Prediction History\n"RESET);
-        printf("\n");
-        printf("  " C_ERROR   BOLD "0." RESET "  " C_DIM "Logout\n" RESET);
-        printf("\n");
+        int sel = getMenuSelection("STUDENT DASHBOARD", subtitle, options, 8);
+        if (sel == 7) choice = 0;
+        else choice = sel + 1;
 
-        inputPrompt("Enter choice");
-        scanf("%d", &choice);
-        getchar();
-
-        if (choice != 0) handleChoice(choice, session);
+        if (choice != 0) handleChoice(choice, session, &sp, &hasAssessment);
 
     } while (choice != 0);
 
@@ -120,7 +131,7 @@ void showStudentMenu(Session *session) {
 /* ══════════════════════════════════════════════════════════
    HANDLE CHOICE DISPATCHER
    ══════════════════════════════════════════════════════════ */
-void handleChoice(int choice, Session *session) {
+void handleChoice(int choice, Session *session, SkillProfile *sp, int *hasAssessment) {
 
     /* ── ADMIN ───────────────────────────────────────────── */
     if (session->role == 0) {
@@ -168,7 +179,7 @@ void handleChoice(int choice, Session *session) {
             case 6: {
                 printf("\n");
                 inputPrompt("Enter Student ID to view history");
-                scanf("%s", sid); getchar();
+                getStringInput(sid, sizeof(sid));
 
                 Student arr[100];
                 int n, i;
@@ -188,6 +199,14 @@ void handleChoice(int choice, Session *session) {
                 pauseScreen();
                 break;
             }
+
+            case 7:
+                showAdminDashboard();
+                break;
+
+            case 8:
+                exportStudentsToCSV();
+                break;
 
             default:
                 printError("Invalid choice. Please try again.");
@@ -210,9 +229,6 @@ void handleChoice(int choice, Session *session) {
             }
         }
 
-        static SkillProfile sp;
-        static int hasAssessment = 0;
-
         switch (choice) {
 
             case 1:
@@ -227,20 +243,35 @@ void handleChoice(int choice, Session *session) {
 
             case 3:
                 if (me == NULL) { printError("Student profile not found."); pauseScreen(); break; }
-                sp = runAssessment(me->id);
-                hasAssessment = 1;
+
+                /* Warn before overwriting an existing assessment */
+                if (*hasAssessment) {
+                    printf("\n  " C_WARNING BOLD SYM_WARN RESET
+                           "  " C_WARNING "You already have a saved assessment. Overwrite? (y/n): " RESET);
+                    char confirm = (char)getchar();
+                    getchar();
+                    if (confirm != 'y' && confirm != 'Y') {
+                        printInfo("Assessment kept unchanged.");
+                        break;
+                    }
+                }
+
+                *sp = runAssessment(me->id);
+                *hasAssessment = 1;
+                saveSkillProfile(sp);          /* persist to data/skills.dat */
+                printSuccess("Skill profile saved!");
                 break;
 
             case 4:
-                if (!hasAssessment) {
+                if (!*hasAssessment) {
                     printWarning("Please run the Skill Assessment first (option 3).");
                     pauseScreen(); break;
                 }
-                rankCareers(&sp);
+                rankCareers(sp);
                 break;
 
             case 5: {
-                if (!hasAssessment) {
+                if (!*hasAssessment) {
                     printWarning("Please run the Skill Assessment first (option 3).");
                     pauseScreen(); break;
                 }
@@ -248,18 +279,18 @@ void handleChoice(int choice, Session *session) {
                 float      scs[NUM_CAREERS];
                 int        count, j;
                 getCareers(cars, &count);
-                for (j = 0; j < count; j++) scs[j] = calculateScore(&sp, &cars[j]);
+                for (j = 0; j < count; j++) scs[j] = calculateScore(sp, &cars[j]);
 
                 int best = 0;
                 for (j = 1; j < count; j++)
                     if (scs[j] > scs[best]) best = j;
 
-                analyzeGap(&sp, &cars[best]);
+                analyzeGap(sp, &cars[best]);
                 break;
             }
 
             case 6: {
-                if (!hasAssessment) {
+                if (!*hasAssessment) {
                     printWarning("Please run the Skill Assessment first (option 3).");
                     pauseScreen(); break;
                 }
@@ -269,7 +300,7 @@ void handleChoice(int choice, Session *session) {
                 float      scs[NUM_CAREERS];
                 int        count, j;
                 getCareers(cars, &count);
-                for (j = 0; j < count; j++) scs[j] = calculateScore(&sp, &cars[j]);
+                for (j = 0; j < count; j++) scs[j] = calculateScore(sp, &cars[j]);
 
                 /* Bubble sort descending */
                 for (j = 0; j < count - 1; j++) {
@@ -281,7 +312,7 @@ void handleChoice(int choice, Session *session) {
                         }
                     }
                 }
-                generateReport(me, &sp, cars, scs);
+                generateReport(me, sp, cars, scs);
                 break;
             }
 

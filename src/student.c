@@ -3,6 +3,7 @@
 #include "student.h"
 #include "colors.h"
 #include "file_handler.h"
+#include "input_handler.h"
 
 /* Generate next unique numeric ID */
 static int generateNextID(void) {
@@ -27,8 +28,7 @@ void createStudent(void) {
     s.name[strcspn(s.name, "\n")] = 0;
 
     inputPrompt("Student ID");
-    scanf("%s", s.studentID);
-    getchar();
+    getStringInput(s.studentID, sizeof(s.studentID));
 
     /* Duplicate check */
     Student arr[100];
@@ -43,13 +43,7 @@ void createStudent(void) {
     }
 
     inputPrompt("CGPA (0.0 - 4.0)");
-    scanf("%f", &s.cgpa);
-    getchar();
-
-    if (s.cgpa < 0.0f || s.cgpa > 4.0f) {
-        printError("CGPA must be between 0.0 and 4.0.");
-        return;
-    }
+    s.cgpa = getFloatInput(0.0f, 4.0f);
 
     inputPrompt("Department");
     fgets(s.department, sizeof(s.department), stdin);
@@ -62,14 +56,16 @@ void createStudent(void) {
 
     printf("\n");
     boxTop();
-    printf(C_BORDER BOX_V RESET "  " C_SUCCESS BOLD " Student registered successfully!" RESET
-           "%*s" C_BORDER BOX_V RESET "\n", 15, "");
-    printf(C_BORDER BOX_V RESET "  " C_INFO "Unique ID  " RESET ": "
-           C_VALUE BOLD "%d" RESET
-           "%*s" C_BORDER BOX_V RESET "\n", s.id, 33, "");
-    printf(C_BORDER BOX_V RESET "  " C_INFO "Student ID " RESET ": "
+    char idStr[16];
+    snprintf(idStr, sizeof(idStr), "%d", s.id);
+    printf(C_BORDER "  " BOX_V RESET "  " C_SUCCESS BOLD " Student registered successfully!" RESET
+           "%*s" C_BORDER BOX_V RESET "\n", 13, "");
+    printf(C_BORDER "  " BOX_V RESET "  " C_INFO "Unique ID  " RESET ": "
            C_VALUE BOLD "%s" RESET
-           "%*s" C_BORDER BOX_V RESET "\n", s.studentID, (int)(33 - strlen(s.studentID)), "");
+           "%*s" C_BORDER BOX_V RESET "\n", idStr, 48 - 15 - (int)strlen(idStr), "");
+    printf(C_BORDER "  " BOX_V RESET "  " C_INFO "Student ID " RESET ": "
+           C_VALUE BOLD "%s" RESET
+           "%*s" C_BORDER BOX_V RESET "\n", s.studentID, 48 - 15 - (int)strlen(s.studentID), "");
     boxBottom();
     printf("\n");
 }
@@ -138,17 +134,21 @@ void updateStudent(const char *studentID) {
             /* CGPA */
             printf("  " C_INFO "Current CGPA       " RESET ": " C_VALUE "%.2f" RESET "\n",
                    arr[i].cgpa);
-            inputPrompt("New CGPA");
-            float newCgpa;
-            if (scanf("%f", &newCgpa) == 1) {
-                if (newCgpa < 0.0f || newCgpa > 4.0f) {
-                    printError("CGPA must be between 0.0 and 4.0. Update aborted.");
-                    getchar();
-                    return;
+            inputPrompt("New CGPA (or leave blank to skip)");
+            char tmpCgpa[20];
+            fgets(tmpCgpa, sizeof(tmpCgpa), stdin);
+            tmpCgpa[strcspn(tmpCgpa, "\n")] = 0;
+            if (strlen(tmpCgpa) > 0) {
+                float newCgpa;
+                if (sscanf(tmpCgpa, "%f", &newCgpa) == 1) {
+                    if (newCgpa < 0.0f || newCgpa > 4.0f) {
+                        printError("CGPA must be between 0.0 and 4.0. Update aborted.");
+                        pauseScreen();
+                        return;
+                    }
+                    arr[i].cgpa = newCgpa;
                 }
-                arr[i].cgpa = newCgpa;
             }
-            getchar();
 
             /* Department */
             printf("  " C_INFO "Current Department " RESET ": " C_VALUE "%s" RESET "\n",
@@ -222,7 +222,7 @@ void listAllStudents(void) {
            "ID", "Name", "Student ID", "CGPA", "Department");
     printf("  " C_DIM);
     int j;
-    for (j = 0; j < 66; j++) printf(BOX_H);
+    for (j = 0; j < 68; j++) printf(BOX_H);
     printf(RESET "\n");
 
     int count = 0;
@@ -240,11 +240,34 @@ void listAllStudents(void) {
                    arr[i].cgpa, arr[i].department);
             printf(RESET);
             count++;
+            
+            if (count % 10 == 0) {
+                printf("  " C_DIM);
+                for (j = 0; j < 68; j++) printf(BOX_H);
+                printf(RESET "\n");
+                printf("  " C_INFO "Press Enter to continue or 'q' to quit..." RESET);
+                
+                char c = getchar();
+                if (c != '\n') {
+                    while (getchar() != '\n'); // flush
+                }
+                if (c == 'q' || c == 'Q') {
+                    break;
+                }
+                
+                /* Reprint header if continuing */
+                printf("\n");
+                printf("  " C_HEADER BOLD "%-4s  %-24s  %-12s  %-6s  %-14s" RESET "\n",
+                       "ID", "Name", "Student ID", "CGPA", "Department");
+                printf("  " C_DIM);
+                for (j = 0; j < 68; j++) printf(BOX_H);
+                printf(RESET "\n");
+            }
         }
     }
 
     printf("  " C_DIM);
-    for (j = 0; j < 66; j++) printf(BOX_H);
+    for (j = 0; j < 68; j++) printf(BOX_H);
     printf(RESET "\n");
 
     if (count == 0) {

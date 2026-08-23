@@ -3,7 +3,6 @@
 #include "colors.h"
 
 void analyzeGap(SkillProfile *sp, CareerPath *cp) {
-    float skills[6];
     const char *skillNames[6] = {
         "Programming",
         "Networking",
@@ -12,7 +11,9 @@ void analyzeGap(SkillProfile *sp, CareerPath *cp) {
         "Communication",
         "Security"
     };
-      skills[0] = sp->programming;
+
+    float skills[6];
+    skills[0] = sp->programming;
     skills[1] = sp->networking;
     skills[2] = sp->design;
     skills[3] = sp->analytics;
@@ -21,46 +22,51 @@ void analyzeGap(SkillProfile *sp, CareerPath *cp) {
 
     CLEAR_SCREEN();
     printf("\n");
-     /* Dynamic title */
+
+    /* Dynamic banner title — cp->name is ASCII so byte len = display len */
     char title[60];
     int tlen = snprintf(title, sizeof(title), "  GAP ANALYSIS  \xe2\x80\x94  %s  ", cp->name);
-    printBanner(title, tlen - 6); /* subtract hidden UTF-8 bytes in em-dash */
+    /* \xe2\x80\x94 is em-dash: 3 bytes, 1 display char → subtract 2 hidden bytes */
+    printBanner(title, tlen - 2);
     printf("\n");
 
-    /* Column header */
+    /* ── Column header ──────────────────────────────────── */
     printf("  " C_HEADER BOLD "%-16s  %7s  %9s  %6s  %-22s\n" RESET,
            "Skill", "Yours", "Required", "Gap", "Status");
     printf("  " C_DIM);
-    int d; for (d = 0; d < 66; d++) printf(BOX_H);
+    { int d; for (d = 0; d < 68; d++) printf(BOX_H); }
     printf(RESET "\n\n");
-       int i;
+
+    /* ── Per-skill rows ─────────────────────────────────── */
+    int i;
     int hasGap = 0;
 
     for (i = 0; i < 6; i++) {
         float gap = cp->minRequired[i] - skills[i];
 
-        /* Skill name + your bar */
+        /* Skill name */
         printf("  " C_INFO "%-16s" RESET "  ", skillNames[i]);
 
-        /* Your score colored */
+        /* Your score — colour-coded */
         if      (skills[i] >= 7.0f) printf(C_SUCCESS BOLD);
         else if (skills[i] >= 4.0f) printf(C_WARNING BOLD);
         else                         printf(C_ERROR   BOLD);
         printf("%5.1f" RESET "    ", skills[i]);
-           /* Required score */
+
+        /* Required score */
         printf(C_VALUE "%7.1f" RESET "  ", cp->minRequired[i]);
 
+        /* Gap + status */
         if (gap > 0) {
-            /* Gap: show deficit in red */
-            printf(C_ERROR BOLD "%+5.1f" RESET "  ", -gap);
-            printf(C_NEEDS BOLD "  \xe2\x9a\xa0  NEEDS IMPROVEMENT" RESET "\n");
+            printf(C_ERROR   BOLD "%+5.1f" RESET "  ", -gap);
+            printf(C_NEEDS   BOLD "  " SYM_WARN "  NEEDS IMPROVEMENT" RESET "\n");
             hasGap = 1;
         } else {
             printf(C_SUCCESS BOLD "%+5.1f" RESET "  ", -gap);
-            printf(C_OK     BOLD "  \xe2\x9c\x94  OK" RESET "\n");
+            printf(C_OK      BOLD "  " SYM_CHECK "  OK" RESET "\n");
         }
 
-        /* Mini progress bar for this skill */
+        /* Mini progress bars */
         printf("  " C_DIM "                 Your: " RESET);
         printSkillBar("", skills[i], 16);
 
@@ -68,30 +74,33 @@ void analyzeGap(SkillProfile *sp, CareerPath *cp) {
         printSkillBar("", cp->minRequired[i], 16);
         printf("\n");
     }
-     printf("  " C_DIM);
-    for (d = 0; d < 66; d++) printf(BOX_H);
+
+    printf("  " C_DIM);
+    { int d; for (d = 0; d < 68; d++) printf(BOX_H); }
     printf(RESET "\n\n");
 
+    /* ── Summary box ────────────────────────────────────── */
     if (!hasGap) {
-        /* Full green box */
-        printf(C_BORDER "  " BOX_TL);
-        for (d = 0; d < 48; d++) printf(BOX_H);
-        printf(BOX_TR RESET "\n");
+        /* "✔  You meet ALL requirements for <name>"
+           SYM_CHECK = ✔ (1 display, 3 bytes) → subtract 2 from snprintf byte count */
+        char plain[64], colored[256];
+        int blen = snprintf(plain, sizeof(plain),
+                            "\xe2\x9c\x94  You meet ALL requirements for %s", cp->name);
+        int dlen = blen - 2; /* UTF-8 adjustment for ✔ */
+        snprintf(colored, sizeof(colored),
+                 C_SUCCESS BOLD SYM_CHECK
+                 "  You meet ALL requirements for " RESET
+                 C_VALUE BOLD "%s" RESET, cp->name);
 
-        printf(C_BORDER "  " BOX_V RESET "  "
-               C_SUCCESS BOLD SYM_CHECK
-               "  You meet ALL requirements for " RESET
-               C_VALUE BOLD "%-14s" RESET "  " C_BORDER BOX_V RESET "\n",
-               cp->name);
-
-        printf(C_BORDER "  " BOX_BL);
-        for (d = 0; d < 48; d++) printf(BOX_H);
-        printf(BOX_BR RESET "\n\n");
+        boxTop();
+        boxRowRaw(colored, dlen);
+        boxBottom();
+        printf("\n");
     } else {
         printf("  " C_WARNING SYM_WARN BOLD
                "  Focus on the skills marked "
                C_NEEDS "[NEEDS IMPROVEMENT]" RESET
-               C_WARNING " to close your gaps.\n" RESET "\n");
+               C_WARNING " to close your gaps." RESET "\n\n");
     }
 
     pauseScreen();
