@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <openssl/sha.h>
+#include "sha256.h"
 #include "student.h"
 #include "colors.h"
 #include "db_handler.h"
@@ -8,12 +8,7 @@
 
 /* Implement SHA-256 password hashing */
 void hashPassword(const char *input, char *output) {
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256((unsigned char*)input, strlen(input), hash);
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        sprintf(output + (i * 2), "%02x", hash[i]);
-    }
-    output[64] = '\0';
+    sha256_hash_string(input, output);
 }
 
 /* ── Create new student ─────────────────────────────────── */

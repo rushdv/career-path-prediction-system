@@ -1,9 +1,9 @@
 # 🚀 Career Path Prediction System
 
 [![Language: C99](https://img.shields.io/badge/Language-C99-blue.svg)](https://en.wikipedia.org/wiki/C99)
-[![Database: SQLite3](https://img.shields.io/badge/Database-SQLite3-003B57.svg?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
-[![Security: OpenSSL](https://img.shields.io/badge/Security-OpenSSL-721412.svg)](https://www.openssl.org/)
-[![Build: Makefile%20%7C%20CMake](https://img.shields.io/badge/Build-Makefile%20%7C%20CMake-brightgreen.svg)](https://cmake.org/)
+[![Database: SQLite3 Embedded](https://img.shields.io/badge/Database-SQLite3%20Amalgamation-003B57.svg?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![Security: Standalone SHA256](https://img.shields.io/badge/Security-Pure%20C%20SHA256-green.svg)]()
+[![Dependencies: Zero](https://img.shields.io/badge/Dependencies-Zero%20External-brightgreen.svg)]()
 
 An advanced, menu-driven C-based **Career Path Prediction & Skill Analytics System**. The system evaluates computer science students' skill profiles, academic course completions, and performance metrics to intelligently score, rank, and recommend the best-suited modern IT career pathways—complete with gap analysis and downloadable report generation.
 
@@ -11,23 +11,14 @@ An advanced, menu-driven C-based **Career Path Prediction & Skill Analytics Syst
 
 ## ✨ Key Features
 
-- 🔐 **Secure Authentication System:** User signup/login with password security using SHA-256 via OpenSSL.
+- ⚡ **Zero External Dependencies:** Built with self-contained pure C SHA-256 and embedded SQLite3 amalgamation. Requires NO extra libraries (`-lsqlite3` / `-lcrypto` no longer required)!
+- 🔐 **Secure Authentication System:** User signup/login with password security using pure C SHA-256 hashing.
 - 👨‍🎓 **Student Profile Management:** Create, view, update, and manage student demographic & academic information.
 - 🎯 **Comprehensive Skill Assessment:** Interactive 1-10 rating across core competencies (Problem Solving, Data Structures, Web, Networking, Data Analytics, Security, Cloud, AI/ML) plus CSE major course tracking.
-- 🧠 **Intelligent Career Matching Engine:** Weighted scoring algorithm predicting compatibility with 10 modern IT career roles:
-  1. **Software Engineer** (Backend/Frontend)
-  2. **Data Scientist / Analyst**
-  3. **Cybersecurity Specialist**
-  4. **Cloud Architect**
-  5. **DevOps Engineer**
-  6. **AI/Machine Learning Engineer**
-  7. **Mobile App Developer**
-  8. **Game Developer**
-  9. **Database Administrator (DBA)**
-  10. **Systems Programmer**
+- 🧠 **Intelligent Career Matching Engine:** Weighted scoring algorithm predicting compatibility with 10 modern IT career roles.
 - 📊 **Skill Gap Analysis:** Highlights exact skill gaps needed to reach target career roles.
 - 📈 **Performance & System Analytics:** Statistical insights and career distribution metrics.
-- 💾 **SQLite Database Persistence:** High-reliability SQL database layer using `libsqlite3`.
+- 💾 **SQLite Database Persistence:** High-reliability SQL database layer using embedded SQLite3.
 - 📄 **Report Generation:** Generates formatted text/summary reports for students.
 - 🎨 **Rich Terminal UI:** Enhanced user experience with ANSI colors, dynamic borders, and clean menu navigation.
 
