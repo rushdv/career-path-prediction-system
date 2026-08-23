@@ -235,3 +235,44 @@ void db_search_students(const char *name_query) {
         printWarning("No students found matching that name.");
     }
 }
+
+int db_get_active_student_count(void) {
+    int count = 0;
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM Students WHERE isActive=1;", -1, &stmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) count = sqlite3_column_int(stmt, 0);
+        sqlite3_finalize(stmt);
+    }
+    return count;
+}
+
+float db_get_average_cgpa(void) {
+    float avg = 0.0f;
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, "SELECT AVG(cgpa) FROM Students WHERE isActive=1;", -1, &stmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) avg = sqlite3_column_double(stmt, 0);
+        sqlite3_finalize(stmt);
+    }
+    return avg;
+}
+
+void db_print_dept_stats(void) {
+    const char *sql = "SELECT department, COUNT(*), AVG(cgpa) FROM Students WHERE isActive=1 GROUP BY department ORDER BY AVG(cgpa) DESC;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return;
+    
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char *dept = (const char *)sqlite3_column_text(stmt, 0);
+        double avg = sqlite3_column_double(stmt, 2);
+        
+        printf(UI_PAD "%s%-24.24s%s | ", CC(C_INFO), dept ? dept : "Unknown", CC(RESET));
+        int bar_len = (int)((avg / 4.0f) * 30.0f);
+        if (bar_len > 0) {
+            printf("%s", CC(C_SUCCESS));
+            for (int b = 0; b < bar_len; b++) fputs(SYM_BAR_F, stdout);
+            printf("%s", CC(RESET));
+        }
+        printf(" %s%.2f%s\n", CC(C_VALUE), avg, CC(RESET));
+    }
+    sqlite3_finalize(stmt);
+}
