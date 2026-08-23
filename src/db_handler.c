@@ -438,3 +438,47 @@ int db_save_prediction(const PredictionRecord *pr) {
     sqlite3_finalize(stmt);
     return res;
 }
+
+void db_print_prediction_stats(void) {
+    const char *sql = "SELECT topCareer, COUNT(*) as c FROM Predictions GROUP BY topCareer ORDER BY c DESC;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return;
+    
+    int max_count = 1; /* prevent div 0 */
+    
+    /* We need to get max_count first for the bar graph */
+    const char *sql_max = "SELECT MAX(c) FROM (SELECT COUNT(*) as c FROM Predictions GROUP BY topCareer);";
+    sqlite3_stmt *stmt_max;
+    if (sqlite3_prepare_v2(db, sql_max, -1, &stmt_max, NULL) == SQLITE_OK) {
+        if (sqlite3_step(stmt_max) == SQLITE_ROW) {
+            max_count = sqlite3_column_int(stmt_max, 0);
+            if (max_count == 0) max_count = 1;
+        }
+        sqlite3_finalize(stmt_max);
+    }
+    
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const char *career = (const char *)sqlite3_column_text(stmt, 0);
+        int count = sqlite3_column_int(stmt, 1);
+        
+        printf(UI_PAD "%s%-24.24s%s | ", CC(C_INFO), career ? career : "Unknown", CC(RESET));
+        int bar_len = (int)(((float)count / max_count) * 30.0f);
+        if (bar_len > 0) {
+            printf("%s", CC(C_SUCCESS));
+            for (int b = 0; b < bar_len; b++) fputs(SYM_BAR_F, stdout);
+            printf("%s", CC(RESET));
+        }
+        printf(" %s%d%s\n", CC(C_VALUE), count, CC(RESET));
+    }
+    sqlite3_finalize(stmt);
+}
+
+int db_get_total_predictions(void) {
+    int count = 0;
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM Predictions;", -1, &stmt, NULL) == SQLITE_OK) {
+        if (sqlite3_step(stmt) == SQLITE_ROW) count = sqlite3_column_int(stmt, 0);
+        sqlite3_finalize(stmt);
+    }
+    return count;
+}
