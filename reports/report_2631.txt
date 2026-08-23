@@ -1,0 +1,41 @@
+=================================================
+        CAREER PATH PREDICTION REPORT            
+=================================================
+
+Date Generated : 2026-08-21 16:40:20
+
+--- STUDENT PROFILE ---
+Name           : Shihab
+Student ID     : 2631
+Department     : CSE
+CGPA           : 3.30
+
+--- SKILL COMPETENCY LEVELS ---
+Programming    : Elementary     (4.0/10)
+Networking     : Intermediate   (6.0/10)
+Cybersecurity  : Intermediate   (6.0/10)
+Data Analytics : Elementary     (4.0/10)
+UI/UX Design   : Advanced       (8.0/10)
+Communication  : Expert         (10.0/10)
+
+--- KNOWN LANGUAGES & TOOLS ---
+Languages      : Python Java JavaScript SQL 
+Tools/Platforms: Git Docker Linux React/Vue MongoDB 
+
+--- PRACTICAL PROJECTS & EXPERIENCE ---
+Web App Built      : Yes
+Mobile App Built   : No
+DB System Built    : Yes
+AI Model Built     : No
+Security Tool Built: Yes
+Internship Done    : Yes
+Hackathon Particip.: Yes
+Competitive Prog.  : Yes
+Research Paper/T.  : Yes
+
+--- RECOMMENDED CAREER PATHS ---
+#1 Information Security Auditor   | Match: 89%
+#2 Network Infrastructure Engineer | Match: 87%
+#3 Cybersecurity Analyst / SOC    | Match: 85%
+
+=================================================

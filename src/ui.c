@@ -1,330 +1,221 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "ui.h"
 #include "colors.h"
+#include "auth.h"
 #include "student.h"
 #include "assessment.h"
 #include "prediction.h"
 #include "gap_analysis.h"
 #include "report.h"
-#include "file_handler.h"
-#include "input_handler.h"
 #include "analytics.h"
+#include "db_handler.h"
+#include "input_handler.h"
 
-/* ── Shared: print history table ────────────────────────── */
-static void printHistory(int studentRef, const char *heading) {
-    PredictionRecord hist[50];
-    int hcount = 0, i;
-    loadHistory(studentRef, hist, &hcount);
+/* ══════════════════════════════════════════════════════════
+   STATUS BAR — framed header rendered at top of every menu
+   ══════════════════════════════════════════════════════════ */
+void statusBar(Session s) {
+    /* Top rule */
+    putchar('\n');
+    fputs(UI_PAD, stdout); printf("%s", CC(C_BORDER));
+    for (int i = 0; i < BOX_WIDTH + 4; i++) fputs(BOX_H, stdout);
+    printf("%s\n", CC(RESET));
 
-    printf("\n");
-    printBanner(heading, (int)strlen(heading));
-    printf("\n");
+    /* Content row */
+    fputs(UI_PAD " ", stdout);
+    printf("%s%s%s", CC(C_PRIMARY), CC(BOLD), SYM_BOLT);
+    printf("%s SYSTEM  %s|%s  ", CC(RESET), CC(C_BORDER2), CC(RESET));
 
-    if (hcount == 0) {
-        printWarning("No prediction history found.");
-        return;
+    if (s.role == 0) {
+        printf("%s%s%s Administrator  %s|%s  Master Control",
+               CC(C_SUCCESS), CC(BOLD), SYM_DIAMOND,
+               CC(C_BORDER2), CC(RESET));
+    } else {
+        Student cur;
+        float cgpa = 0.0f;
+        if (db_get_student_by_num(s.studentNumId, &cur)) cgpa = cur.cgpa;
+        printf("%s%s%s Student  %s|%s  %s%s%s  %s|%s  %s%s  GPA: %s%.2f",
+               CC(C_INFO), CC(BOLD), SYM_DIAMOND,
+               CC(C_BORDER2), CC(RESET),
+               CC(C_ACCENT), CC(BOLD), s.studentID,
+               CC(C_BORDER2), CC(RESET),
+               CC(C_WARNING), SYM_STAR,
+               CC(C_VALUE), cgpa);
     }
+    printf("%s\n", CC(RESET));
 
-    printf("  " C_HEADER BOLD "%-4s  %-20s  %-24s  %s\n" RESET,
-           "#", "Date & Time", "Top Career", "Score");
-    printf("  " C_DIM);
-    int d; for (d = 0; d < 62; d++) printf(BOX_H);
-    printf(RESET "\n");
-
-    for (i = 0; i < hcount; i++) {
-        printf("  " C_VALUE "%-4d" RESET "  "
-               C_DIM  "%-20s" RESET "  "
-               C_ACCENT "%-24s" RESET "  "
-               C_SUCCESS BOLD "%.2f/10" RESET "\n",
-               i + 1, hist[i].timestamp,
-               hist[i].topCareer, hist[i].score);
-    }
-
-    printf("  " C_DIM);
-    for (d = 0; d < 62; d++) printf(BOX_H);
-    printf(RESET "\n\n");
+    /* Bottom rule */
+    fputs(UI_PAD, stdout); printf("%s", CC(C_BORDER));
+    for (int i = 0; i < BOX_WIDTH + 4; i++) fputs(BOX_H, stdout);
+    printf("%s\n\n", CC(RESET));
 }
 
 /* ══════════════════════════════════════════════════════════
    ADMIN MENU
    ══════════════════════════════════════════════════════════ */
-void showAdminMenu(void) {
-    Session session;
-    session.role = 0;
-    strcpy(session.studentID, "ADMIN");
+void adminMenu(Session s) {
+    while (1) {
+        CLEAR_SCREEN();
+        statusBar(s);
 
-    int choice;
-    const char *options[] = {
-        "View All Students",
-        "View Student Profile",
-        "Update Student Profile",
-        "Delete Student",
-        "Search Student by Name",
-        "View Prediction History",
-        "View Analytics Dashboard",
-        "Export Data to CSV",
-        "Logout"
-    };
-    do {
-        int sel = getMenuSelection("ADMIN DASHBOARD", NULL, options, 9);
-        if (sel == 8) choice = 0;
-        else choice = sel + 1;
+        const char *opts[] = {
+            "View All Students",
+            "Search Student by Name",
+            "Delete a Student",
+            "Analytics Dashboard",
+            "Logout"
+        };
+        int sel = getMenuSelection("ADMINISTRATOR PANEL",
+                                   "Restricted access area",
+                                   opts, 5);
 
-        if (choice != 0) handleChoice(choice, &session, NULL, NULL);
+        if (sel == 0) {
+            CLEAR_SCREEN();
+            statusBar(s);
+            listAllStudents();
+            pauseScreen();
 
-    } while (choice != 0);
+        } else if (sel == 1) {
+            CLEAR_SCREEN();
+            statusBar(s);
+            printf("\n");
+            printBanner("STUDENT SEARCH", 14);
+            printf("\n");
+            char query[50];
+            inputPrompt("Enter name to search");
+            getStringInput(query, sizeof(query));
+            searchByName(query);
+            pauseScreen();
 
-    printf("\n");
-    printInfo("Logged out. Goodbye, Admin!");
-    printf("\n");
+        } else if (sel == 2) {
+            CLEAR_SCREEN();
+            statusBar(s);
+            printf("\n");
+            printBanner("DELETE STUDENT", 14);
+            printf("\n");
+            char delID[20];
+            inputPrompt("Enter Student ID to delete");
+            getStringInput(delID, sizeof(delID));
+            deleteStudent(delID);
+            pauseScreen();
+
+        } else if (sel == 3) {
+            CLEAR_SCREEN();
+            statusBar(s);
+            showAdminDashboard();
+
+        } else if (sel == 4) {
+            return;
+        }
+    }
 }
 
 /* ══════════════════════════════════════════════════════════
    STUDENT MENU
    ══════════════════════════════════════════════════════════ */
-void showStudentMenu(Session *session) {
-    int choice;
+void studentMenu(Session s) {
+    while (1) {
+        CLEAR_SCREEN();
+        statusBar(s);
 
-    /* ── Skill profile state lives here, not inside handleChoice ── */
-    SkillProfile sp;
-    int hasAssessment = 0;
+        const char *opts[] = {
+            "Update My Profile",
+            "Take Skill Assessment",
+            "View Career Prediction",
+            "Skill Gap Analysis",
+            "Generate My Report",
+            "Logout"
+        };
+        int sel = getMenuSelection("STUDENT DASHBOARD",
+                                   "Select an action to proceed",
+                                   opts, 6);
 
-    /* Auto-load saved assessment from previous session */
-    if (session->studentNumId > 0 &&
-        loadSkillProfile(session->studentNumId, &sp)) {
-        hasAssessment = 1;
-    }
+        if (sel == 0) {
+            CLEAR_SCREEN();
+            statusBar(s);
+            updateStudent(s.studentID);
+            pauseScreen();
 
-    const char *options[] = {
-        "View My Profile",
-        "Update My Profile",
-        "Run Skill Assessment",
-        "View Career Prediction",
-        "View Gap Analysis",
-        "Generate Report",
-        "View My Prediction History",
-        "Logout"
-    };
+        } else if (sel == 1) {
+            runAssessment(s.studentNumId);
 
-    do {
-        char subtitle[256];
-        if (hasAssessment) {
-            snprintf(subtitle, sizeof(subtitle), "  " C_SUCCESS BOLD SYM_CHECK RESET "  " C_DIM "Skill profile loaded" RESET);
-        } else {
-            snprintf(subtitle, sizeof(subtitle), "  " C_WARNING BOLD SYM_WARN RESET "  " C_DIM "No skill profile — run option 3 first" RESET);
-        }
-
-        int sel = getMenuSelection("STUDENT DASHBOARD", subtitle, options, 8);
-        if (sel == 7) choice = 0;
-        else choice = sel + 1;
-
-        if (choice != 0) handleChoice(choice, session, &sp, &hasAssessment);
-
-    } while (choice != 0);
-
-    printf("\n");
-    printInfo("Logged out. See you next time!");
-    printf("\n");
-}
-
-/* ══════════════════════════════════════════════════════════
-   HANDLE CHOICE DISPATCHER
-   ══════════════════════════════════════════════════════════ */
-void handleChoice(int choice, Session *session, SkillProfile *sp, int *hasAssessment) {
-
-    /* ── ADMIN ───────────────────────────────────────────── */
-    if (session->role == 0) {
-        char sid[20];
-        switch (choice) {
-
-            case 1:
-                listAllStudents();
+        } else if (sel == 2) {
+            SkillProfile sp;
+            if (db_load_skill_profile(s.studentNumId, &sp)) {
+                rankCareers(&sp);
+            } else {
+                printWarning("Complete the Skill Assessment first!");
                 pauseScreen();
-                break;
+            }
 
-            case 2:
-                printf("\n");
-                inputPrompt("Enter Student ID to view");
-                scanf("%s", sid); getchar();
-                viewStudent(sid);
+        } else if (sel == 3) {
+            SkillProfile sp;
+            if (!db_load_skill_profile(s.studentNumId, &sp)) {
+                printWarning("Complete the Skill Assessment first!");
                 pauseScreen();
-                break;
+                continue;
+            }
 
-            case 3:
-                printf("\n");
-                inputPrompt("Enter Student ID to update");
-                scanf("%s", sid); getchar();
-                updateStudent(sid);
+            /* Load the career the student was predicted for */
+            PredictionRecord pr;
+            if (!db_get_last_prediction(s.studentNumId, &pr)) {
+                printWarning("View Career Prediction first to generate a result!");
                 pauseScreen();
-                break;
+                continue;
+            }
 
-            case 4:
-                printf("\n");
-                inputPrompt("Enter Student ID to delete");
-                scanf("%s", sid); getchar();
-                deleteStudent(sid);
+            /* Find that career in the careers list */
+            CareerPath careers[NUM_CAREERS];
+            int count = 0;
+            getCareers(careers, &count);
+
+            int foundIdx = -1;
+            for (int i = 0; i < count; i++) {
+                if (strcmp(careers[i].name, pr.topCareer) == 0) {
+                    foundIdx = i;
+                    break;
+                }
+            }
+            if (foundIdx < 0) {
+                printWarning("Career data not found. Please re-run Career Prediction.");
                 pauseScreen();
-                break;
+                continue;
+            }
 
-            case 5:
-                printf("\n");
-                inputPrompt("Enter name to search");
-                fgets(sid, sizeof(sid), stdin);
-                sid[strcspn(sid, "\n")] = 0;
-                searchByName(sid);
+            analyzeGap(&sp, &careers[foundIdx]);
+
+        } else if (sel == 4) {
+            SkillProfile sp;
+            if (!db_load_skill_profile(s.studentNumId, &sp)) {
+                printWarning("Complete the Skill Assessment first!");
                 pauseScreen();
-                break;
-
-            case 6: {
-                printf("\n");
-                inputPrompt("Enter Student ID to view history");
-                getStringInput(sid, sizeof(sid));
-
-                Student arr[100];
-                int n, i;
-                loadAllStudents(arr, &n);
-                int ref = -1;
-                for (i = 0; i < n; i++) {
-                    if (strcmp(arr[i].studentID, sid) == 0) {
-                        ref = arr[i].id;
-                        break;
+                continue;
+            }
+            Student st;
+            if (!db_get_student_by_num(s.studentNumId, &st)) {
+                printError("Could not load your profile.");
+                pauseScreen();
+                continue;
+            }
+            CareerPath careers[NUM_CAREERS];
+            int count = 0;
+            getCareers(careers, &count);
+            float scores[NUM_CAREERS];
+            for (int i = 0; i < count; i++)
+                scores[i] = calculateScore(&sp, &careers[i]);
+            /* Sort descending */
+            for (int i = 0; i < count - 1; i++)
+                for (int j = 0; j < count - 1 - i; j++)
+                    if (scores[j] < scores[j+1]) {
+                        float ts = scores[j]; scores[j] = scores[j+1]; scores[j+1] = ts;
+                        CareerPath tp = careers[j]; careers[j] = careers[j+1]; careers[j+1] = tp;
                     }
-                }
-                if (ref == -1) {
-                    printError("Student not found.");
-                } else {
-                    printHistory(ref, "  PREDICTION HISTORY  ");
-                }
-                pauseScreen();
-                break;
-            }
+            generateReport(&st, &sp, careers, scores);
 
-            case 7:
-                showAdminDashboard();
-                break;
-
-            case 8:
-                exportStudentsToCSV();
-                break;
-
-            default:
-                printError("Invalid choice. Please try again.");
-                pauseScreen();
-        }
-        return;
-    }
-
-    /* ── STUDENT ─────────────────────────────────────────── */
-    if (session->role == 1) {
-        Student arr[100];
-        int n, i;
-        loadAllStudents(arr, &n);
-        Student *me = NULL;
-        for (i = 0; i < n; i++) {
-            if (arr[i].isActive == 1 &&
-                strcmp(arr[i].studentID, session->studentID) == 0) {
-                me = &arr[i];
-                break;
-            }
-        }
-
-        switch (choice) {
-
-            case 1:
-                viewStudent(session->studentID);
-                pauseScreen();
-                break;
-
-            case 2:
-                updateStudent(session->studentID);
-                pauseScreen();
-                break;
-
-            case 3:
-                if (me == NULL) { printError("Student profile not found."); pauseScreen(); break; }
-
-                /* Warn before overwriting an existing assessment */
-                if (*hasAssessment) {
-                    printf("\n  " C_WARNING BOLD SYM_WARN RESET
-                           "  " C_WARNING "You already have a saved assessment. Overwrite? (y/n): " RESET);
-                    char confirm = (char)getchar();
-                    getchar();
-                    if (confirm != 'y' && confirm != 'Y') {
-                        printInfo("Assessment kept unchanged.");
-                        break;
-                    }
-                }
-
-                *sp = runAssessment(me->id);
-                *hasAssessment = 1;
-                saveSkillProfile(sp);          /* persist to data/skills.dat */
-                printSuccess("Skill profile saved!");
-                break;
-
-            case 4:
-                if (!*hasAssessment) {
-                    printWarning("Please run the Skill Assessment first (option 3).");
-                    pauseScreen(); break;
-                }
-                rankCareers(sp);
-                break;
-
-            case 5: {
-                if (!*hasAssessment) {
-                    printWarning("Please run the Skill Assessment first (option 3).");
-                    pauseScreen(); break;
-                }
-                CareerPath cars[NUM_CAREERS];
-                float      scs[NUM_CAREERS];
-                int        count, j;
-                getCareers(cars, &count);
-                for (j = 0; j < count; j++) scs[j] = calculateScore(sp, &cars[j]);
-
-                int best = 0;
-                for (j = 1; j < count; j++)
-                    if (scs[j] > scs[best]) best = j;
-
-                analyzeGap(sp, &cars[best]);
-                break;
-            }
-
-            case 6: {
-                if (!*hasAssessment) {
-                    printWarning("Please run the Skill Assessment first (option 3).");
-                    pauseScreen(); break;
-                }
-                if (me == NULL) { printError("Student profile not found."); pauseScreen(); break; }
-
-                CareerPath cars[NUM_CAREERS];
-                float      scs[NUM_CAREERS];
-                int        count, j;
-                getCareers(cars, &count);
-                for (j = 0; j < count; j++) scs[j] = calculateScore(sp, &cars[j]);
-
-                /* Bubble sort descending */
-                for (j = 0; j < count - 1; j++) {
-                    int k;
-                    for (k = 0; k < count - 1 - j; k++) {
-                        if (scs[k] < scs[k+1]) {
-                            float      ts = scs[k];   scs[k]   = scs[k+1];  scs[k+1]  = ts;
-                            CareerPath tc = cars[k];  cars[k]  = cars[k+1]; cars[k+1] = tc;
-                        }
-                    }
-                }
-                generateReport(me, sp, cars, scs);
-                break;
-            }
-
-            case 7:
-                if (me == NULL) { printError("Student profile not found."); pauseScreen(); break; }
-                printHistory(me->id, "  MY PREDICTION HISTORY  ");
-                pauseScreen();
-                break;
-
-            default:
-                printError("Invalid choice. Please try again.");
-                pauseScreen();
+        } else if (sel == 5) {
+            return;
         }
     }
 }

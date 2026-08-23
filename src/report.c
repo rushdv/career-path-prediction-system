@@ -1,106 +1,105 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <sys/stat.h>
 #include "report.h"
 #include "colors.h"
+#include "db_handler.h"
+#include "assessment.h"
 
-void generateReport(Student *s, SkillProfile *sp,
-                    CareerPath ranked[], float scores[]) {
+#ifdef _WIN32
+#define MKDIR(path) _mkdir(path)
+#else
+#define MKDIR(path) mkdir(path, 0777)
+#endif
 
+void generateReport(const Student *st, const SkillProfile *sp, CareerPath *cars, float *scores) {
     char filename[100];
-    snprintf(filename, sizeof(filename), "reports/%s_report.txt", s->studentID);
+    snprintf(filename, sizeof(filename), "reports/report_%s.txt", st->studentID);
+    
+    MKDIR("reports");
 
-    FILE *f = fopen(filename, "w");
-    if (f == NULL) {
-        printError("Could not create report file. Check that 'reports/' folder exists.");
+    FILE *fp = fopen(filename, "w");
+    if (!fp) {
+        printError("Could not create report file in reports/ directory.");
+        pauseScreen();
         return;
     }
 
-     time_t now = time(NULL);
-    char timeStr[30];
-    struct tm *t = localtime(&now);
-    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", t);
+    /* Get current time */
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
 
-    /* ── Write plain-text report (no ANSI — file viewer compatible) ── */
-    fprintf(f, "================================================\n");
-    fprintf(f, "    CAREER PATH PREDICTION SYSTEM REPORT\n");
-    fprintf(f, "    Northern University Bangladesh\n");
-    fprintf(f, "================================================\n");
-    fprintf(f, " Generated  : %s\n\n", timeStr);
+    fprintf(fp, "=================================================\n");
+    fprintf(fp, "        CAREER PATH PREDICTION REPORT            \n");
+    fprintf(fp, "=================================================\n\n");
 
-    fprintf(f, "------------------------------------------------\n");
-    fprintf(f, " STUDENT INFORMATION\n");
-    fprintf(f, "------------------------------------------------\n");
-    fprintf(f, " Name       : %s\n",   s->name);
-    fprintf(f, " Student ID : %s\n",   s->studentID);
-    fprintf(f, " CGPA       : %.2f\n", s->cgpa);
-    fprintf(f, " Department : %s\n\n", s->department);
+    fprintf(fp, "Date Generated : %d-%02d-%02d %02d:%02d:%02d\n\n",
+            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+            tm.tm_hour, tm.tm_min, tm.tm_sec);
 
-    fprintf(f, "------------------------------------------------\n");
-    fprintf(f, " SKILL ASSESSMENT\n");
-    fprintf(f, "------------------------------------------------\n");
+    fprintf(fp, "--- STUDENT PROFILE ---\n");
+    fprintf(fp, "Name           : %s\n", st->name);
+    fprintf(fp, "Student ID     : %s\n", st->studentID);
+    fprintf(fp, "Department     : %s\n", st->department);
+    fprintf(fp, "CGPA           : %.2f\n\n", st->cgpa);
 
-    /* Skill bars as ASCII art in file */
-    float skillVals[6] = {
-        sp->programming, sp->networking, sp->design,
-        sp->analytics, sp->communication, sp->security
-    };
-    const char *skillLabels[6] = {
-        "Programming", "Networking", "Design",
-        "Analytics", "Communication", "Security"
-    };
-    int i, b;
-    for (i = 0; i < 6; i++) {
-        int filled = (int)((skillVals[i] / 10.0f) * 20);
-        int empty  = 20 - filled;
-        fprintf(f, " %-16s [", skillLabels[i]);
-        for (b = 0; b < filled; b++) fprintf(f, "#");
-        for (b = 0; b < empty;  b++) fprintf(f, ".");
-        fprintf(f, "] %.1f/10\n", skillVals[i]);
+    fprintf(fp, "--- SKILL COMPETENCY LEVELS ---\n");
+    fprintf(fp, "Programming    : %-14s (%.1f/10)\n", levelName(sp->level_programming), sp->programming);
+    fprintf(fp, "Networking     : %-14s (%.1f/10)\n", levelName(sp->level_networking), sp->networking);
+    fprintf(fp, "Cybersecurity  : %-14s (%.1f/10)\n", levelName(sp->level_security), sp->security);
+    fprintf(fp, "Data Analytics : %-14s (%.1f/10)\n", levelName(sp->level_analytics), sp->analytics);
+    fprintf(fp, "UI/UX Design   : %-14s (%.1f/10)\n", levelName(sp->level_design), sp->design);
+    fprintf(fp, "Communication  : %-14s (%.1f/10)\n\n", levelName(sp->level_communication), sp->communication);
+
+    fprintf(fp, "--- KNOWN LANGUAGES & TOOLS ---\n");
+    fprintf(fp, "Languages      : %s%s%s%s%s%s%s%s\n",
+            sp->lang_python ? "Python " : "",
+            sp->lang_java   ? "Java "   : "",
+            sp->lang_c_cpp  ? "C/C++ "  : "",
+            sp->lang_js     ? "JavaScript " : "",
+            sp->lang_php    ? "PHP "    : "",
+            sp->lang_go     ? "Go "     : "",
+            sp->lang_kotlin ? "Kotlin " : "",
+            sp->lang_sql    ? "SQL "    : "");
+    fprintf(fp, "Tools/Platforms: %s%s%s%s%s%s%s%s\n\n",
+            sp->tool_git       ? "Git "    : "",
+            sp->tool_docker    ? "Docker " : "",
+            sp->tool_linux     ? "Linux "  : "",
+            sp->tool_cloud     ? "Cloud(AWS/GCP) " : "",
+            sp->tool_react_vue ? "React/Vue " : "",
+            sp->tool_tf_pytorch? "TF/PyTorch " : "",
+            sp->tool_figma     ? "Figma "  : "",
+            sp->tool_mongodb   ? "MongoDB " : "");
+
+    fprintf(fp, "--- PRACTICAL PROJECTS & EXPERIENCE ---\n");
+    fprintf(fp, "Web App Built      : %s\n", sp->proj_web ? "Yes" : "No");
+    fprintf(fp, "Mobile App Built   : %s\n", sp->proj_mobile ? "Yes" : "No");
+    fprintf(fp, "DB System Built    : %s\n", sp->proj_db ? "Yes" : "No");
+    fprintf(fp, "AI Model Built     : %s\n", sp->proj_ai ? "Yes" : "No");
+    fprintf(fp, "Security Tool Built: %s\n", sp->proj_security ? "Yes" : "No");
+    fprintf(fp, "Internship Done    : %s\n", sp->exp_internship ? "Yes" : "No");
+    fprintf(fp, "Hackathon Particip.: %s\n", sp->exp_hackathon ? "Yes" : "No");
+    fprintf(fp, "Competitive Prog.  : %s\n", sp->exp_competitive_prog ? "Yes" : "No");
+    fprintf(fp, "Research Paper/T.  : %s\n\n", sp->exp_research ? "Yes" : "No");
+
+    fprintf(fp, "--- RECOMMENDED CAREER PATHS ---\n");
+    for (int i = 0; i < 3; i++) {
+        fprintf(fp, "#%d %-30s | Match: %.0f%%\n", i + 1, cars[i].name, scores[i] * 10.0f);
     }
+    fprintf(fp, "\n=================================================\n");
+    
+    fclose(fp);
 
-    fprintf(f, "\n------------------------------------------------\n");
-    fprintf(f, " CAREER PATH RANKINGS\n");
-    fprintf(f, "------------------------------------------------\n");
-    for (i = 0; i < NUM_CAREERS; i++) {
-        int filled = (int)((scores[i] / 10.0f) * 20);
-        int empty  = 20 - filled;
-        fprintf(f, " %d. %-24s [", i + 1, ranked[i].name);
-        for (b = 0; b < filled; b++) fprintf(f, "#");
-        for (b = 0; b < empty;  b++) fprintf(f, ".");
-        fprintf(f, "] %.2f/10\n", scores[i]);
-    }
-
-    fprintf(f, "\n TOP RECOMMENDATION : %s (%.2f/10)\n\n", ranked[0].name, scores[0]);
-    fprintf(f, "================================================\n");
-    fprintf(f, " END OF REPORT\n");
-    fprintf(f, "================================================\n");
-
-    fclose(f);
-
-    /* ── Terminal confirmation box ── */
+    CLEAR_SCREEN();
     printf("\n");
-    {
-        /* Row 1: SYM_CHECK(1) + "  Report generated successfully!"(32) = 33 */
-        char plain2[64], colored2[256];
-        int dlen2 = snprintf(plain2, sizeof(plain2),
-                             "File  : %s", filename);
-        snprintf(colored2, sizeof(colored2),
-                 C_INFO "File  " RESET ": " C_VALUE BOLD "%s" RESET, filename);
-
-        char plain3[64], colored3[128];
-        int dlen3 = snprintf(plain3, sizeof(plain3),
-                             "Time  : %s", timeStr);
-        snprintf(colored3, sizeof(colored3),
-                 C_INFO "Time  " RESET ": " C_VALUE "%s" RESET, timeStr);
-
-        boxTop();
-        boxRowRaw(C_SUCCESS BOLD SYM_CHECK "  Report generated successfully!" RESET, 33);
-        boxRowRaw(colored2, dlen2);
-        boxRowRaw(colored3, dlen3);
-        boxBottom();
-    }
-    printf("\n\n");
-
+    printBanner("REPORT GENERATED", 16);
+    printf("\n");
+    printf(UI_PAD "%sYour detailed career report has been saved to:%s\n",
+           CC(C_DIM), CC(RESET));
+    printf(UI_PAD " %s%s%s %s%s%s%s\n\n",
+           CC(C_PRIMARY), SYM_ARROW, CC(RESET),
+           CC(C_ACCENT), CC(BOLD), filename, CC(RESET));
+    printSuccess("You can view or share this report at any time.");
     pauseScreen();
 }

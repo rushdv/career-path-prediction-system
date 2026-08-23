@@ -1,46 +1,51 @@
 #include <stdio.h>
 #include <string.h>
+#include <openssl/sha.h>
 #include "student.h"
 #include "colors.h"
-#include "file_handler.h"
+#include "db_handler.h"
 #include "input_handler.h"
 
-/* Generate next unique numeric ID */
-static int generateNextID(void) {
-    Student arr[100];
-    int n;
-    loadAllStudents(arr, &n);
-    if (n == 0) return 1;
-    return arr[n - 1].id + 1;
+/* Implement SHA-256 password hashing */
+void hashPassword(const char *input, char *output) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256((unsigned char*)input, strlen(input), hash);
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        sprintf(output + (i * 2), "%02x", hash[i]);
+    }
+    output[64] = '\0';
 }
 
 /* ── Create new student ─────────────────────────────────── */
 void createStudent(void) {
     Student s;
+    memset(&s, 0, sizeof(Student));
 
     CLEAR_SCREEN();
     printf("\n");
-    printBanner("  CREATE NEW STUDENT PROFILE  ", 30);
+    printBanner("CREATE NEW STUDENT PROFILE", 26);
     printf("\n");
 
     inputPrompt("Full Name");
     fgets(s.name, sizeof(s.name), stdin);
-    s.name[strcspn(s.name, "\n")] = 0;
+    s.name[strcspn(s.name, "\r\n")] = 0;
 
     inputPrompt("Student ID");
     getStringInput(s.studentID, sizeof(s.studentID));
 
     /* Duplicate check */
-    Student arr[100];
-    int n, i;
-    loadAllStudents(arr, &n);
-    for (i = 0; i < n; i++) {
-        if (arr[i].isActive == 1 &&
-            strcmp(arr[i].studentID, s.studentID) == 0) {
-            printError("Student ID already exists. Please try a different ID.");
-            return;
-        }
+    Student temp;
+    if (db_get_student_by_id(s.studentID, &temp) && temp.isActive) {
+        printError("Student ID already exists. Please try a different ID.");
+        return;
     }
+
+    char rawPass[65];
+    inputPrompt("Password");
+    printf("\033[8m"); /* conceal */
+    getStringInput(rawPass, sizeof(rawPass));
+    printf("\033[28m"); /* reveal */
+    hashPassword(rawPass, s.password);
 
     inputPrompt("CGPA (0.0 - 4.0)");
     s.cgpa = getFloatInput(0.0f, 4.0f);
@@ -49,265 +54,180 @@ void createStudent(void) {
     fgets(s.department, sizeof(s.department), stdin);
     s.department[strcspn(s.department, "\n")] = 0;
 
-    s.id       = generateNextID();
     s.isActive = 1;
 
-    saveStudent(&s);
-
-    printf("\n");
-    boxTop();
-    char idStr[16];
-    snprintf(idStr, sizeof(idStr), "%d", s.id);
-    printf(C_BORDER "  " BOX_V RESET "  " C_SUCCESS BOLD " Student registered successfully!" RESET
-           "%*s" C_BORDER BOX_V RESET "\n", 13, "");
-    printf(C_BORDER "  " BOX_V RESET "  " C_INFO "Unique ID  " RESET ": "
-           C_VALUE BOLD "%s" RESET
-           "%*s" C_BORDER BOX_V RESET "\n", idStr, 48 - 15 - (int)strlen(idStr), "");
-    printf(C_BORDER "  " BOX_V RESET "  " C_INFO "Student ID " RESET ": "
-           C_VALUE BOLD "%s" RESET
-           "%*s" C_BORDER BOX_V RESET "\n", s.studentID, 48 - 15 - (int)strlen(s.studentID), "");
-    boxBottom();
-    printf("\n");
+    if (db_insert_student(&s)) {
+        db_get_student_by_id(s.studentID, &s); /* Fetch the auto-incremented ID */
+        printf("\n");
+        printSuccess("Student registered successfully!");
+        char idStr[16];
+        snprintf(idStr, sizeof(idStr), "%d", s.id);
+        printKV("Unique ID",  idStr);
+        printKV("Student ID", s.studentID);
+        printf("\n");
+    } else {
+        printError("Failed to register student in the database.");
+    }
 }
 
 /* ── View student profile ───────────────────────────────── */
 void viewStudent(const char *studentID) {
-    Student arr[100];
-    int n, i, found = 0;
-    loadAllStudents(arr, &n);
+    Student s;
+    if (db_get_student_by_id(studentID, &s) && s.isActive) {
+        printf("\n");
+        printBanner("STUDENT PROFILE", 15);
+        printf("\n");
 
-    for (i = 0; i < n; i++) {
-        if (arr[i].isActive == 1 &&
-            strcmp(arr[i].studentID, studentID) == 0) {
+        char idStr[12], cgpaStr[10];
+        snprintf(idStr,   sizeof(idStr),   "%d",   s.id);
+        snprintf(cgpaStr, sizeof(cgpaStr), "%.2f", s.cgpa);
 
-            printf("\n");
-            printBanner("  STUDENT PROFILE  ", 19);
-            printf("\n");
-
-            char idStr[12], cgpaStr[10];
-            snprintf(idStr,   sizeof(idStr),   "%d",   arr[i].id);
-            snprintf(cgpaStr, sizeof(cgpaStr), "%.2f", arr[i].cgpa);
-
-            printKV("Name",       arr[i].name);
-            printKV("Student ID", arr[i].studentID);
-            printKV("Unique ID",  idStr);
-            printKV("CGPA",       cgpaStr);
-            printKV("Department", arr[i].department);
-            printf("\n");
-
-            found = 1;
-            break;
-        }
-    }
-    if (!found) {
+        printKV("Name",       s.name);
+        printKV("Student ID", s.studentID);
+        printKV("Unique ID",  idStr);
+        printKV("CGPA",       cgpaStr);
+        printKV("Department", s.department);
+        printf("\n");
+    } else {
         printError("Student ID not found.");
     }
 }
 
 /* ── Update student profile ─────────────────────────────── */
 void updateStudent(const char *studentID) {
-    Student arr[100];
-    int n, i, found = 0;
-    loadAllStudents(arr, &n);
+    Student s;
+    if (db_get_student_by_id(studentID, &s) && s.isActive) {
+        printf("\n");
+        printBanner("UPDATE STUDENT PROFILE", 22);
+        printf("\n");
 
-    for (i = 0; i < n; i++) {
-        if (arr[i].isActive == 1 &&
-            strcmp(arr[i].studentID, studentID) == 0) {
+        printf(UI_PAD "%sLeave blank and press Enter to keep current value.%s\n\n",
+               CC(C_DIM), CC(RESET));
 
-            printf("\n");
-            printBanner("  UPDATE STUDENT PROFILE  ", 25);
-            printf("\n");
+        /* Name */
+        printf(UI_PAD "%sCurrent Name       %s: %s%s%s\n",
+               CC(C_INFO), CC(RESET), CC(C_VALUE), s.name, CC(RESET));
+        inputPrompt("New Name");
+        char tmp[50];
+        fgets(tmp, sizeof(tmp), stdin);
+        tmp[strcspn(tmp, "\r\n")] = 0;
+        if (strlen(tmp) > 0) {
+            strncpy(s.name, tmp, sizeof(s.name) - 1);
+        }
 
-            printf("  " C_DIM "Leave blank and press Enter to keep current value.\n" RESET "\n");
-
-            /* Name */
-            printf("  " C_INFO "Current Name       " RESET ": " C_VALUE "%s" RESET "\n",
-                   arr[i].name);
-            inputPrompt("New Name");
-            char tmp[50];
-            fgets(tmp, sizeof(tmp), stdin);
-            tmp[strcspn(tmp, "\n")] = 0;
-            if (strlen(tmp) > 0) {
-                strncpy(arr[i].name, tmp, sizeof(arr[i].name) - 1);
+        /* Password */
+        printf(UI_PAD "%sCurrent Password   %s: %s********%s\n",
+               CC(C_INFO), CC(RESET), CC(C_VALUE), CC(RESET));
+        inputPrompt("New Password (or leave blank to skip)");
+        char tmpPass[50];
+        fgets(tmpPass, sizeof(tmpPass), stdin);
+        tmpPass[strcspn(tmpPass, "\r\n")] = 0;
+        if (strlen(tmpPass) > 0) {
+            char oldPass[50];
+            char oldHash[65];
+            inputPrompt("Enter Current Password to confirm");
+            printf("\033[8m"); /* conceal */
+            fgets(oldPass, sizeof(oldPass), stdin);
+            printf("\033[28m"); /* reveal */
+            oldPass[strcspn(oldPass, "\r\n")] = 0;
+            
+            hashPassword(oldPass, oldHash);
+            if (strcmp(s.password, oldHash) == 0) {
+                hashPassword(tmpPass, s.password);
+                printSuccess("Password updated.");
+            } else {
+                printError("Incorrect current password. Password NOT updated.");
             }
+        }
 
-            /* CGPA */
-            printf("  " C_INFO "Current CGPA       " RESET ": " C_VALUE "%.2f" RESET "\n",
-                   arr[i].cgpa);
-            inputPrompt("New CGPA (or leave blank to skip)");
-            char tmpCgpa[20];
-            fgets(tmpCgpa, sizeof(tmpCgpa), stdin);
-            tmpCgpa[strcspn(tmpCgpa, "\n")] = 0;
-            if (strlen(tmpCgpa) > 0) {
-                float newCgpa;
-                if (sscanf(tmpCgpa, "%f", &newCgpa) == 1) {
-                    if (newCgpa < 0.0f || newCgpa > 4.0f) {
-                        printError("CGPA must be between 0.0 and 4.0. Update aborted.");
-                        pauseScreen();
-                        return;
-                    }
-                    arr[i].cgpa = newCgpa;
+        /* CGPA */
+        printf(UI_PAD "%sCurrent CGPA       %s: %s%.2f%s\n",
+               CC(C_INFO), CC(RESET), CC(C_VALUE), s.cgpa, CC(RESET));
+        inputPrompt("New CGPA (or leave blank to skip)");
+        char tmpCgpa[20];
+        fgets(tmpCgpa, sizeof(tmpCgpa), stdin);
+        tmpCgpa[strcspn(tmpCgpa, "\r\n")] = 0;
+        if (strlen(tmpCgpa) > 0) {
+            float newCgpa;
+            if (sscanf(tmpCgpa, "%f", &newCgpa) == 1) {
+                if (newCgpa < 0.0f || newCgpa > 4.0f) {
+                    printError("CGPA must be between 0.0 and 4.0. Update aborted.");
+                    pauseScreen();
+                    return;
                 }
+                s.cgpa = newCgpa;
             }
+        }
 
-            /* Department */
-            printf("  " C_INFO "Current Department " RESET ": " C_VALUE "%s" RESET "\n",
-                   arr[i].department);
-            inputPrompt("New Department");
-            fgets(tmp, sizeof(tmp), stdin);
-            tmp[strcspn(tmp, "\n")] = 0;
-            if (strlen(tmp) > 0) {
-                strncpy(arr[i].department, tmp, sizeof(arr[i].department) - 1);
-            }
+        /* Department */
+        printf(UI_PAD "%sCurrent Department %s: %s%s%s\n",
+               CC(C_INFO), CC(RESET), CC(C_VALUE), s.department, CC(RESET));
+        inputPrompt("New Department");
+        fgets(tmp, sizeof(tmp), stdin);
+        tmp[strcspn(tmp, "\r\n")] = 0;
+        if (strlen(tmp) > 0) {
+            strncpy(s.department, tmp, sizeof(s.department) - 1);
+        }
 
-            updateStudentFile(arr, n);
+        if (db_update_student(&s)) {
             printf("\n");
             printSuccess("Profile updated successfully!");
-            found = 1;
-            break;
+        } else {
+            printError("Failed to update profile in database.");
         }
-    }
-    if (!found) {
+    } else {
         printError("Student ID not found. Update failed.");
     }
 }
 
 /* ── Delete student (soft) ──────────────────────────────── */
 void deleteStudent(const char *studentID) {
-    Student arr[100];
-    int n, i, found = 0;
-    loadAllStudents(arr, &n);
+    Student s;
+    if (db_get_student_by_id(studentID, &s) && s.isActive) {
+        printf("\n" UI_PAD "%s%s  Are you sure you want to delete student %s%s%s%s? (y/n): %s",
+               CC(C_WARNING), SYM_WARN,
+               CC(RESET), CC(C_VALUE), CC(BOLD), s.name,
+               CC(RESET));
 
-    for (i = 0; i < n; i++) {
-        if (arr[i].isActive == 1 &&
-            strcmp(arr[i].studentID, studentID) == 0) {
+        char confirm = (char)getchar();
+        getchar();
 
-            printf("\n  " C_WARNING SYM_WARN
-                   "  Are you sure you want to delete student " RESET
-                   C_VALUE BOLD "%s" RESET C_WARNING " ? (y/n): " RESET,
-                   arr[i].name);
-
-            char confirm = (char)getchar();
-            getchar();
-
-            if (confirm != 'y' && confirm != 'Y') {
-                printInfo("Deletion cancelled.");
-                return;
-            }
-
-            arr[i].isActive = 0;
-            updateStudentFile(arr, n);
-            printSuccess("Student deleted successfully.");
-            found = 1;
-            break;
+        if (confirm != 'y' && confirm != 'Y') {
+            printInfo("Deletion cancelled.");
+            return;
         }
-    }
-    if (!found) {
+
+        if (db_delete_student(studentID)) {
+            printSuccess("Student deleted successfully.");
+        } else {
+            printError("Database error during deletion.");
+        }
+    } else {
         printError("Student ID not found. Deletion failed.");
     }
 }
 
 /* ── List all active students ───────────────────────────── */
 void listAllStudents(void) {
-    Student arr[100];
-    int n, i;
-    loadAllStudents(arr, &n);
-
     printf("\n");
-    printBanner("  ALL ACTIVE STUDENTS  ", 22);
+    printBanner("ALL ACTIVE STUDENTS", 19);
     printf("\n");
+    
+    printf(UI_PAD "%s%s%-4s  %-24s  %-12s  %-6s  %-14s%s\n",
+           CC(C_PURPLE), CC(BOLD),
+           "ID", "Name", "Student ID", "CGPA", "Department",
+           CC(RESET));
+    printf(UI_PAD "%s", CC(C_DIM));
+    for (int j = 0; j < 68; j++) fputs(BOX_H, stdout);
+    printf("%s\n", CC(RESET));
 
-    /* Table header */
-    printf("  " C_HEADER BOLD "%-4s  %-24s  %-12s  %-6s  %-14s" RESET "\n",
-           "ID", "Name", "Student ID", "CGPA", "Department");
-    printf("  " C_DIM);
-    int j;
-    for (j = 0; j < 68; j++) printf(BOX_H);
-    printf(RESET "\n");
-
-    int count = 0;
-    for (i = 0; i < n; i++) {
-        if (arr[i].isActive == 1) {
-            /* Alternate row shading */
-            if (count % 2 == 0)
-                printf(RESET);
-            else
-                printf(DIM);
-
-            printf("  " C_VALUE "%-4d" RESET "  %-24s  " C_ACCENT "%-12s" RESET
-                   "  " C_INFO "%-6.2f" RESET "  %-14s\n",
-                   arr[i].id, arr[i].name, arr[i].studentID,
-                   arr[i].cgpa, arr[i].department);
-            printf(RESET);
-            count++;
-            
-            if (count % 10 == 0) {
-                printf("  " C_DIM);
-                for (j = 0; j < 68; j++) printf(BOX_H);
-                printf(RESET "\n");
-                printf("  " C_INFO "Press Enter to continue or 'q' to quit..." RESET);
-                
-                char c = getchar();
-                if (c != '\n') {
-                    while (getchar() != '\n'); // flush
-                }
-                if (c == 'q' || c == 'Q') {
-                    break;
-                }
-                
-                /* Reprint header if continuing */
-                printf("\n");
-                printf("  " C_HEADER BOLD "%-4s  %-24s  %-12s  %-6s  %-14s" RESET "\n",
-                       "ID", "Name", "Student ID", "CGPA", "Department");
-                printf("  " C_DIM);
-                for (j = 0; j < 68; j++) printf(BOX_H);
-                printf(RESET "\n");
-            }
-        }
-    }
-
-    printf("  " C_DIM);
-    for (j = 0; j < 68; j++) printf(BOX_H);
-    printf(RESET "\n");
-
-    if (count == 0) {
-        printWarning("No active students found.");
-    } else {
-        printf("  " C_DIM "Total active students: " RESET C_VALUE BOLD "%d" RESET "\n\n",
-               count);
-    }
+    db_list_all_students();
 }
 
 /* ── Search by name ─────────────────────────────────────── */
 void searchByName(const char *name) {
-    Student arr[100];
-    int n, i, found = 0;
-    loadAllStudents(arr, &n);
-
     printf("\n");
-    printBanner("  SEARCH RESULTS  ", 18);
+    printBanner("SEARCH RESULTS", 14);
     printf("\n");
-
-    for (i = 0; i < n; i++) {
-        if (arr[i].isActive == 1 &&
-            strstr(arr[i].name, name) != NULL) {
-
-            char idStr[12], cgpaStr[10];
-            snprintf(idStr,   sizeof(idStr),   "%d",   arr[i].id);
-            snprintf(cgpaStr, sizeof(cgpaStr), "%.2f", arr[i].cgpa);
-
-            boxTop();
-            printKV("Name",       arr[i].name);
-            printKV("Student ID", arr[i].studentID);
-            printKV("Unique ID",  idStr);
-            printKV("CGPA",       cgpaStr);
-            printKV("Department", arr[i].department);
-            boxBottom();
-            printf("\n");
-            found = 1;
-        }
-    }
-    if (!found) {
-        printWarning("No students found matching that name.");
-    }
+    db_search_students(name);
 }

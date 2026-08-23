@@ -1,36 +1,43 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
 #include "auth.h"
 #include "ui.h"
+#include "colors.h"
+#include "db_handler.h"
+#include "input_handler.h"
 
-#ifdef _WIN32
-#include <windows.h>
-#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
-#endif
-static void enableWindowsANSI(void) {
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut == INVALID_HANDLE_VALUE) return;
-    DWORD dwMode = 0;
-    if (!GetConsoleMode(hOut, &dwMode)) return;
-    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    SetConsoleMode(hOut, dwMode);
-    
-    /* Set console encoding to UTF-8 to render box drawing characters properly */
-    SetConsoleOutputCP(CP_UTF8);
-    SetConsoleCP(CP_UTF8);
+/* ── Clean exit on Ctrl-C ─────────────────────────────── */
+static void sigintHandler(int dummy) {
+    (void)dummy;
+    restoreTerminal();
+    db_close();
+    printf("\n\n" UI_PAD "%s[SYSTEM] Terminated by user. Cleanup successful.%s\n\n",
+           C_DIM, RESET);
+    exit(0);
 }
-#endif
 
 int main(void) {
-#ifdef _WIN32
-    enableWindowsANSI();
-#endif
+    /* 1. Detect terminal capabilities (colour + UTF-8) */
+    term_init();
 
-    Session s = login();
+    /* 2. Register signal handler and atexit for clean exit */
+    signal(SIGINT, sigintHandler);
+    atexit(db_close);
 
-    if (s.role == 0) {
-        showAdminMenu();
-    } else {
-        showStudentMenu(&s);
+    /* 3. Open / create database */
+    db_init();
+
+    /* 4. Application Main Loop */
+    while (1) {
+        /* Authenticate */
+        Session s = login();
+
+        /* Route to the correct menu */
+        if (s.role == 0)
+            adminMenu(s);
+        else
+            studentMenu(s);
     }
 
     return 0;

@@ -3,6 +3,6 @@
 
 #include "prediction.h"
 
-void analyzeGap(SkillProfile *sp, CareerPath *cp);
+void analyzeGap(const SkillProfile *sp, const CareerPath *cp);
 
 #endif

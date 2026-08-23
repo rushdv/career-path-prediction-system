@@ -3,44 +3,100 @@
 #include <string.h>
 #include "auth.h"
 #include "colors.h"
-#include "file_handler.h"
+#include "db_handler.h"
 #include "student.h"
 #include "input_handler.h"
 
-Session login(void)
-{
-    Session s;
-    int choice;
+/* ══════════════════════════════════════════════════════════
+   SPLASH SCREEN — centred double-line frame
+   ══════════════════════════════════════════════════════════ */
+static void splashRow(const char *content, int frameWidth) {
+    int contentVisible = utf8_display_len(content);
+    int lpad = (frameWidth - contentVisible) / 2;
+    int rpad = frameWidth - contentVisible - lpad;
+    fputs(UI_PAD, stdout);
+    printf("%s", CC(C_BORDER)); fputs(BOX_V, stdout); printf("%s", CC(RESET));
+    printf("%*s", lpad, "");
+    fputs(content, stdout);
+    printf("%*s", rpad, "");
+    printf("%s", CC(C_BORDER)); fputs(BOX_V, stdout); printf("%s\n", CC(RESET));
+}
 
+static void drawSplash(void) {
     CLEAR_SCREEN();
+    printf("\n\n");
 
-    /* ── Splash / ASCII art ──────────────────────────────── */
-    printf("\n");
-    printf(C_BORDER "  " DBL_TL DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H
-           DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H
-           DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H
-           DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H
-           DBL_H DBL_H DBL_H DBL_H DBL_TR RESET "\n");
+    int frameWidth = BOX_WIDTH + 4;   /* inner visible chars between the ║ borders */
 
-    printf(C_BORDER "  " DBL_V RESET
-           "                                                " C_BORDER DBL_V RESET "\n");
+    /* Top border */
+    fputs(UI_PAD, stdout); printf("%s", CC(C_BORDER));
+    fputs(BOX_TL, stdout);
+    for (int i = 0; i < frameWidth; i++) fputs(BOX_H, stdout);
+    fputs(BOX_TR, stdout); printf("%s\n", CC(RESET));
 
-    printf(C_BORDER "  " DBL_V RESET
-           C_TITLE BOLD "      \xe2\x97\x8f  CAREER PATH PREDICTION SYSTEM  \xe2\x97\x8f       " RESET
-           C_BORDER DBL_V RESET "\n");
+    /* Empty row */
+    fputs(UI_PAD, stdout); printf("%s", CC(C_BORDER)); fputs(BOX_V, stdout);
+    printf("%*s", frameWidth, "");
+    fputs(BOX_V, stdout); printf("%s\n", CC(RESET));
 
-    printf(C_BORDER "  " DBL_V RESET
-           C_DIM "         Northern University Bangladesh         " RESET
-           C_BORDER DBL_V RESET "\n");
+    /* System title  — bolt + text + bolt */
+    {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "%s%s%s %s %s%s",
+                 CC(C_ACCENT), CC(BOLD), SYM_BOLT,
+                 "CAREER PATH PREDICTION SYSTEM",
+                 SYM_BOLT,CC(RESET));
+        splashRow(buf, frameWidth);
+    }
 
-    printf(C_BORDER "  " DBL_V RESET
-           "                                                " C_BORDER DBL_V RESET "\n");
+    /* Institution */
+    {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "%s%s%s",
+                 CC(C_INFO), "Northern University Bangladesh", CC(RESET));
+        splashRow(buf, frameWidth);
+    }
 
-    printf(C_BORDER "  " DBL_BL DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H
-           DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H
-           DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H
-           DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H DBL_H
-           DBL_H DBL_H DBL_H DBL_H DBL_BR RESET "\n\n");
+    /* Version */
+    {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "%s%s%s", CC(C_DIM), "v2.0  |  2026 Edition", CC(RESET));
+        splashRow(buf, frameWidth);
+    }
+
+    /* Empty row */
+    fputs(UI_PAD, stdout); printf("%s", CC(C_BORDER)); fputs(BOX_V, stdout);
+    printf("%*s", frameWidth, "");
+    fputs(BOX_V, stdout); printf("%s\n", CC(RESET));
+
+    /* Powered-by tag */
+    {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "%s%s%s",
+                 CC(C_MUTED), "= Predictive AI Analytics Engine =", CC(RESET));
+        splashRow(buf, frameWidth);
+    }
+
+    /* Empty row */
+    fputs(UI_PAD, stdout); printf("%s", CC(C_BORDER)); fputs(BOX_V, stdout);
+    printf("%*s", frameWidth, "");
+    fputs(BOX_V, stdout); printf("%s\n", CC(RESET));
+
+    /* Bottom border */
+    fputs(UI_PAD, stdout); printf("%s", CC(C_BORDER));
+    fputs(BOX_BL, stdout);
+    for (int i = 0; i < frameWidth; i++) fputs(BOX_H, stdout);
+    fputs(BOX_BR, stdout); printf("%s\n\n", CC(RESET));
+}
+
+/* ══════════════════════════════════════════════════════════
+   LOGIN ENTRY POINT
+   ══════════════════════════════════════════════════════════ */
+Session login(void) {
+    Session s;
+    memset(&s, 0, sizeof(Session));
+
+    drawSplash();
 
     const char *menuOptions[] = {
         "Admin Login",
@@ -48,112 +104,103 @@ Session login(void)
         "Register as New Student",
         "Exit"
     };
-    int sel = getMenuSelection("LOGIN", NULL, menuOptions, 4);
-    
-    if (sel == 3) choice = 0;
-    else choice = sel + 1;
+    int sel = getMenuSelection("AUTHENTICATION",
+                               "Powered by Predictive AI Analytics Engine",
+                               menuOptions, 4);
 
-    /* ── Handlers ────────────────────────────────────────── */
-    if (choice == 0)
-    {
-        printf("\n  " C_DIM "Goodbye! See you next time." RESET "\n\n");
+    /* ── Exit ─────────────────────────────────────────────── */
+    if (sel == 3) {
+        printf("\n" UI_PAD "%sGoodbye! See you next time.%s\n\n", CC(C_DIM), CC(RESET));
         exit(EXIT_SUCCESS);
     }
 
-    else if (choice == 1)
-    {
-        char pass[30];
+    /* ── Admin Login ──────────────────────────────────────── */
+    if (sel == 0) {
+        CLEAR_SCREEN();
         printf("\n");
-        boxTop();
-        boxRowRaw(C_TITLE BOLD "  ADMIN AUTHENTICATION  " RESET, 24);
-        boxBottom();
-
+        printBanner("ADMIN AUTHENTICATION", 20);
         printf("\n");
-        inputPrompt("Enter Admin Password");
-        /* Hide password input */
-        printf("\033[8m"); /* conceal */
-        getStringInput(pass, sizeof(pass));
-        printf("\033[28m"); /* reveal */
 
-        if (strcmp(pass, ADMIN_PASSWORD) != 0)
-        {
-            printError("Access Denied! Invalid password.");
+        char pass[64];
+        inputPrompt("Admin Password");
+        printf("\033[8m");
+        if (fgets(pass, sizeof(pass), stdin) != NULL)
+            pass[strcspn(pass, "\r\n")] = 0;
+        printf("\033[28m");
+
+        if (strcmp(pass, ADMIN_PASSWORD) != 0) {
+            printError("Access denied. Invalid administrator password.");
+            pauseScreen();
             exit(EXIT_FAILURE);
         }
         s.role = 0;
         strcpy(s.studentID, "ADMIN");
-        printf("\n");
-        printSuccess("Access Granted! Welcome, Admin.");
+        s.studentNumId = 0;
+        printSuccess("Access granted. Welcome, Administrator.");
         pauseScreen();
     }
 
-    else if (choice == 2)
-    {
+    /* ── Student Login ────────────────────────────────────── */
+    else if (sel == 1) {
+        CLEAR_SCREEN();
         printf("\n");
-        boxTop();
-        boxRowRaw(C_TITLE BOLD "  STUDENT AUTHENTICATION  " RESET, 26);
-        boxBottom();
-
+        printBanner("STUDENT LOGIN", 13);
         printf("\n");
-        inputPrompt("Enter your Student ID");
-        getStringInput(s.studentID, sizeof(s.studentID));
 
-        Student arr[100];
-        int n = 0, found = 0, i;
-        loadAllStudents(arr, &n);
+        inputPrompt("Student ID");
+        if (fgets(s.studentID, sizeof(s.studentID), stdin) != NULL)
+            s.studentID[strcspn(s.studentID, "\r\n")] = 0;
 
-        for (i = 0; i < n; i++)
-        {
-            if (arr[i].isActive == 1 &&
-                strcmp(arr[i].studentID, s.studentID) == 0)
-            {
-                found = 1;
-                s.studentNumId = arr[i].id;  /* store numeric PK for file lookups */
-                printf("\n");
-                printSuccess("Access Granted!");
-                printf("  " C_INFO "Welcome back, " RESET C_VALUE BOLD "%s" RESET "\n\n",
-                       arr[i].name);
+        char pass[64];
+        char passHash[65];
+        inputPrompt("Password");
+        printf("\033[8m");
+        if (fgets(pass, sizeof(pass), stdin) != NULL)
+            pass[strcspn(pass, "\r\n")] = 0;
+        printf("\033[28m");
+
+        hashPassword(pass, passHash);
+
+        Student current;
+        if (db_get_student_by_id(s.studentID, &current) && current.isActive) {
+            if (strcmp(current.password, passHash) != 0) {
+                printError("Access denied. Incorrect password.");
                 pauseScreen();
-                break;
+                exit(EXIT_FAILURE);
             }
-        }
-
-        if (!found)
-        {
-            printError("Access Denied! Student ID not found. Please register first.");
+            s.studentNumId = current.id;
+            s.role         = 1;
+            printf("\n");
+            printSuccess("Access granted!");
+            printf(UI_PAD "%sWelcome back, %s%s%s%s%s\n\n",
+                   CC(C_INFO), CC(RESET), CC(C_ACCENT), CC(BOLD), current.name, CC(RESET));
+            pauseScreen();
+        } else {
+            printError("Student ID not found. Please register first.");
+            pauseScreen();
             exit(EXIT_FAILURE);
         }
-        s.role = 1;
     }
 
-    else if (choice == 3)
-    {
+    /* ── Register ─────────────────────────────────────────── */
+    else if (sel == 2) {
         s.role = 1;
         createStudent();
-        printInfo("Registration complete! Now login with your Student ID.");
+        printInfo("Registration complete! Please log in with your Student ID.");
         printf("\n");
         inputPrompt("Enter your Student ID");
         getStringInput(s.studentID, sizeof(s.studentID));
 
-        /* Look up numeric id for the newly registered student */
-        {
-            Student arr2[100];
-            int n2 = 0, i2;
+        Student temp;
+        if (db_get_student_by_id(s.studentID, &temp)) {
+            s.studentNumId = temp.id;
+        } else {
             s.studentNumId = 0;
-            loadAllStudents(arr2, &n2);
-            for (i2 = 0; i2 < n2; i2++) {
-                if (arr2[i2].isActive == 1 &&
-                    strcmp(arr2[i2].studentID, s.studentID) == 0) {
-                    s.studentNumId = arr2[i2].id;
-                    break;
-                }
-            }
         }
     }
 
-    else
-    {
-        printError("Invalid choice. Exiting.");
+    else {
+        printError("Invalid choice.");
         exit(EXIT_FAILURE);
     }
 
