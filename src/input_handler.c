@@ -71,7 +71,6 @@ int getIntInputRange(int min, int max) {
    ══════════════════════════════════════════════════════════ */
 #ifdef _WIN32
 void restoreTerminal(void) {}
-static void enableRawMode(void) {}
 #else
 static struct termios orig_termios;
 

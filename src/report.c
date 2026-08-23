@@ -2,16 +2,16 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
-#include "report.h"
-#include "colors.h"
-#include "db_handler.h"
-#include "assessment.h"
-
 #ifdef _WIN32
+#include <direct.h>
 #define MKDIR(path) _mkdir(path)
 #else
 #define MKDIR(path) mkdir(path, 0777)
 #endif
+#include "report.h"
+#include "colors.h"
+#include "db_handler.h"
+#include "assessment.h"
 
 void generateReport(const Student *st, const SkillProfile *sp, CareerPath *cars, float *scores) {
     char filename[100];
