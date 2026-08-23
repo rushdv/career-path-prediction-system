@@ -17,7 +17,7 @@ set(SOURCES
     src/assessment.c
     src/prediction.c
     src/gap_analysis.c
-    src/file_handler.c
+    src/db_handler.c
     src/report.c
     src/ui.c
     src/colors.c
@@ -27,6 +27,25 @@ set(SOURCES
 
 # Build the executable
 add_executable(career_system ${SOURCES})
+
+# Find and link SQLite3 & OpenSSL
+find_package(SQLite3)
+if (SQLite3_FOUND)
+    target_link_libraries(career_system PRIVATE SQLite::SQLite3)
+else()
+    target_link_libraries(career_system PRIVATE sqlite3)
+endif()
+
+find_package(OpenSSL)
+if (OPENSSL_FOUND)
+    target_link_libraries(career_system PRIVATE OpenSSL::Crypto)
+else()
+    target_link_libraries(career_system PRIVATE crypto)
+endif()
+
+if (WIN32)
+    target_link_libraries(career_system PRIVATE ws2_32 advapi32)
+endif()
 
 # Ensure the executable output is in the root directory like the Makefile
 set_target_properties(career_system PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")

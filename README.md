@@ -155,6 +155,17 @@ sudo apt install build-essential cmake libsqlite3-dev libssl-dev -y
    ./career_system
    ```
 
+### Option 3: On Windows (Using Batch Scripts)
+
+1. **One-click Build:** Double-click or run [build.bat](file:///run/media/aevum7/Lab/Dev%20Stack/My%20Projects/career-path-prediction-system/build.bat) from CMD / PowerShell:
+   ```cmd
+   build.bat
+   ```
+2. **One-click Run:** Double-click or run [run.bat](file:///run/media/aevum7/Lab/Dev%20Stack/My%20Projects/career-path-prediction-system/run.bat):
+   ```cmd
+   run.bat
+   ```
+
 ---
 
 ## 📜 License
