@@ -8,6 +8,12 @@
 #define MKDIR(path) mkdir(path, 0777)
 #endif
 #include <errno.h>
+#ifdef _WIN32
+#include <direct.h>
+#define MAKE_DIRECTORY(path) _mkdir(path)
+#else
+#define MAKE_DIRECTORY(path) mkdir(path, 0777)
+#endif
 #include "file_handler.h"
 #include "colors.h"
 
@@ -136,7 +142,7 @@ void exportStudentsToCSV(void) {
     int n;
     loadAllStudents(arr, &n);
     
-    MKDIR("reports");
+    MAKE_DIRECTORY("reports");
     
     FILE *fp = fopen("reports/students_export.csv", "w");
     if (!fp) {

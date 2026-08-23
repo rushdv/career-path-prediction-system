@@ -52,10 +52,7 @@ int getIntInput(void) {
 }
 
 /* Helper to set terminal mode */
-#ifdef _WIN32
-static void disableRawMode(void) {}
-static void enableRawMode(void) {}
-#else
+#ifndef _WIN32
 static struct termios orig_termios;
 static void disableRawMode(void) {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
@@ -66,6 +63,9 @@ static void enableRawMode(void) {
     raw.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
+#else
+static void disableRawMode(void) {}
+static void enableRawMode(void) {}
 #endif
 
 int getMenuSelection(const char *title, const char *subtitle, const char **options, int num_options) {
@@ -123,6 +123,18 @@ int getMenuSelection(const char *title, const char *subtitle, const char **optio
         }
 #else
         enableRawMode();
+    #ifdef _WIN32
+        c = (char)_getch();
+        if (c == 0 || c == (char)224) {
+            c = (char)_getch();
+            if (c == 72) selected--;
+            if (c == 80) selected++;
+            if (selected < 0) selected = num_options - 1;
+            if (selected >= num_options) selected = 0;
+            disableRawMode();
+            continue;
+        }
+    #else
         c = getchar();
         if (c == '\033') { 
             int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
@@ -145,6 +157,12 @@ int getMenuSelection(const char *title, const char *subtitle, const char **optio
             return selected;
         } else {
             disableRawMode();
+        }
+#endif
+#ifdef _WIN32
+        if (c == '\r' || c == '\n') {
+            disableRawMode();
+            return selected;
         }
 #endif
     }
