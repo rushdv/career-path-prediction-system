@@ -424,3 +424,17 @@ int db_get_last_prediction(int studentRef, PredictionRecord *pr) {
     sqlite3_finalize(stmt);
     return found;
 }
+
+int db_save_prediction(const PredictionRecord *pr) {
+    const char *sql = "INSERT INTO Predictions (studentRef, topCareer, score) VALUES (?, ?, ?);";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return 0;
+    
+    sqlite3_bind_int(stmt, 1, pr->studentRef);
+    sqlite3_bind_text(stmt, 2, pr->topCareer, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 3, pr->score);
+    
+    int res = (sqlite3_step(stmt) == SQLITE_DONE);
+    sqlite3_finalize(stmt);
+    return res;
+}
