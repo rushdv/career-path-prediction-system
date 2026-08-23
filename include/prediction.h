@@ -3,23 +3,35 @@
 
 #include "assessment.h"
 
-#define NUM_CAREERS 6
+#define NUM_CAREERS 40
+
+typedef struct {
+    int studentRef;
+    char topCareer[100];
+    float score;
+    char timestamp[30];
+} PredictionRecord;
 
 typedef struct {
     char  name[50];
-    float weights[6];
-    float minRequired[6];
+    int   career_type;  /* 1=Software, 2=Data/AI, 3=Security, 4=Cloud, 5=Design */
+    float req_programming;
+    float req_networking;
+    float req_design;
+    float req_analytics;
+    float req_communication;
+    float req_security;
+    
+    /* Weights for having relevant courses */
+    float weight_ml_ai;
+    float weight_web_dev;
+    float weight_data_science;
+    float weight_cybersecurity;
+    float weight_cloud_computing;
 } CareerPath;
 
-typedef struct {
-    int   studentRef;
-    char  timestamp[30];
-    char  topCareer[50];
-    float score;
-} PredictionRecord;
-
-void  rankCareers(SkillProfile *sp);
-float calculateScore(SkillProfile *sp, CareerPath *cp);
-void  getCareers(CareerPath out[], int *count);
+void getCareers(CareerPath *careers, int *count);
+float calculateScore(const SkillProfile *sp, const CareerPath *cp);
+void rankCareers(const SkillProfile *sp);
 
 #endif

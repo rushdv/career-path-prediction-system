@@ -109,6 +109,19 @@ int getMenuSelection(const char *title, const char *subtitle, const char **optio
         printf("\n  " C_DIM "Use Up/Down arrows to navigate, Enter to select." RESET "\n");
         fflush(stdout);
         
+#ifdef _WIN32
+        int ch = _getch();
+        if (ch == 0 || ch == 224) {
+            int seq = _getch();
+            if (seq == 72) { selected--; } /* Up */
+            else if (seq == 80) { selected++; } /* Down */
+            
+            if (selected < 0) selected = num_options - 1;
+            if (selected >= num_options) selected = 0;
+        } else if (ch == '\r' || ch == '\n') {
+            return selected;
+        }
+#else
         enableRawMode();
     #ifdef _WIN32
         c = (char)_getch();

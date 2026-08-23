@@ -1,6 +1,12 @@
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#include <direct.h>
+#define MKDIR(path) _mkdir(path)
+#else
 #include <sys/stat.h>
+#define MKDIR(path) mkdir(path, 0777)
+#endif
 #include <errno.h>
 #ifdef _WIN32
 #include <direct.h>
