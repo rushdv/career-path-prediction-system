@@ -1,107 +1,68 @@
-#include <stdio.h>
-#include "gap_analysis.h"
-#include "colors.h"
 
-void analyzeGap(SkillProfile *sp, CareerPath *cp) {
-    const char *skillNames[6] = {
-        "Programming",
-        "Networking",
-        "Design",
-        "Analytics",
-        "Communication",
-        "Security"
-    };
+/* ── Rank and display top careers ───────────────────────── */
+void rankCareers(const SkillProfile *sp) {
+    CareerPath careers[NUM_CAREERS];
+    int count;
+    getCareers(careers, &count);
 
-    float skills[6];
-    skills[0] = sp->programming;
-    skills[1] = sp->networking;
-    skills[2] = sp->design;
-    skills[3] = sp->analytics;
-    skills[4] = sp->communication;
-    skills[5] = sp->security;
+    float scores[NUM_CAREERS];
+    for (int i = 0; i < count; i++) {
+        scores[i] = calculateScore(sp, &careers[i]);
+    }
+
+    /* Bubble sort to rank careers (descending) */
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = 0; j < count - 1 - i; j++) {
+            if (scores[j] < scores[j + 1]) {
+                float tempScore = scores[j];
+                scores[j] = scores[j + 1];
+                scores[j + 1] = tempScore;
+
+                CareerPath tempPath = careers[j];
+                careers[j] = careers[j + 1];
+                careers[j + 1] = tempPath;
+            }
+        }
+    }
 
     CLEAR_SCREEN();
     printf("\n");
-
-    /* Dynamic banner title — cp->name is ASCII so byte len = display len */
-    char title[60];
-    int tlen = snprintf(title, sizeof(title), "  GAP ANALYSIS  \xe2\x80\x94  %s  ", cp->name);
-    /* \xe2\x80\x94 is em-dash: 3 bytes, 1 display char → subtract 2 hidden bytes */
-    printBanner(title, tlen - 2);
+    printBanner("CAREER PREDICTION RESULTS", 25);
     printf("\n");
 
-    /* ── Column header ──────────────────────────────────── */
-    printf("  " C_HEADER BOLD "%-16s  %7s  %9s  %6s  %-22s\n" RESET,
-           "Skill", "Yours", "Required", "Gap", "Status");
-    printf("  " C_DIM);
-    { int d; for (d = 0; d < 66; d++) printf(BOX_H); }
-    printf(RESET "\n\n");
+    printf(UI_PAD "%sBased on your skill profile, here are your top career matches:%s\n\n",
+           C_DIM, RESET);
 
-    /* ── Per-skill rows ─────────────────────────────────── */
-    int i;
-    int hasGap = 0;
+    const char *rankColors[] = { C_RANK1,    C_RANK2,    C_RANK3   };
+    const char *rankStars[]  = { SYM_RANK1,  SYM_RANK2,  SYM_RANK3 };
+    const char *rankTags[]   = { "BEST MATCH",  "2nd Match",  "3rd Match" };
 
-    for (i = 0; i < 6; i++) {
-        float gap = cp->minRequired[i] - skills[i];
+    for (int i = 0; i < 3 && i < count; i++) {
+        float pct = scores[i] * 10.0f;
 
-        /* Skill name */
-        printf("  " C_INFO "%-16s" RESET "  ", skillNames[i]);
+        /* Rank header line */
+        printf(UI_PAD "%s%s%s  %s#%d%s  %s%s%s\n",
+               CC(rankColors[i]), rankStars[i], CC(RESET),
+               CC(BOLD), i + 1, CC(RESET),
+               CC(C_DIM), rankTags[i], CC(RESET));
 
-        /* Your score — colour-coded */
-        if      (skills[i] >= 7.0f) printf(C_SUCCESS BOLD);
-        else if (skills[i] >= 4.0f) printf(C_WARNING BOLD);
-        else                         printf(C_ERROR   BOLD);
-        printf("%5.1f" RESET "    ", skills[i]);
-
-        /* Required score */
-        printf(C_VALUE "%7.1f" RESET "  ", cp->minRequired[i]);
-
-        /* Gap + status */
-        if (gap > 0) {
-            printf(C_ERROR   BOLD "%+5.1f" RESET "  ", -gap);
-            printf(C_NEEDS   BOLD "  " SYM_WARN "  NEEDS IMPROVEMENT" RESET "\n");
-            hasGap = 1;
-        } else {
-            printf(C_SUCCESS BOLD "%+5.1f" RESET "  ", -gap);
-            printf(C_OK      BOLD "  " SYM_CHECK "  OK" RESET "\n");
-        }
-
-        /* Mini progress bars */
-        printf("  " C_DIM "                 Your: " RESET);
-        printSkillBar("", skills[i], 16);
-
-        printf("  " C_DIM "                 Need: " RESET);
-        printSkillBar("", cp->minRequired[i], 16);
-        printf("\n");
+        /* Career name + score bar + percentage */
+        printf(UI_PAD "  %s%s%-34s%s  ",
+               CC(rankColors[i]), CC(BOLD), careers[i].name, CC(RESET));
+        printScoreBar(scores[i], 14);
+        printf("  %s%s%.0f%%%s\n\n",
+               CC(rankColors[i]), CC(BOLD), pct, CC(RESET));
     }
 
-    printf("  " C_DIM);
-    { int d; for (d = 0; d < 66; d++) printf(BOX_H); }
-    printf(RESET "\n\n");
+    printHRule(BOX_WIDTH + 4);
 
-    /* ── Summary box ────────────────────────────────────── */
-    if (!hasGap) {
-        /* "✔  You meet ALL requirements for <name>"
-           SYM_CHECK = ✔ (1 display, 3 bytes) → subtract 2 from snprintf byte count */
-        char plain[64], colored[256];
-        int blen = snprintf(plain, sizeof(plain),
-                            "\xe2\x9c\x94  You meet ALL requirements for %s", cp->name);
-        int dlen = blen - 2; /* UTF-8 adjustment for ✔ */
-        snprintf(colored, sizeof(colored),
-                 C_SUCCESS BOLD SYM_CHECK
-                 "  You meet ALL requirements for " RESET
-                 C_VALUE BOLD "%s" RESET, cp->name);
-
-        boxTop();
-        boxRowRaw(colored, dlen);
-        boxBottom();
-        printf("\n");
-    } else {
-        printf("  " C_WARNING SYM_WARN BOLD
-               "  Focus on the skills marked "
-               C_NEEDS "[NEEDS IMPROVEMENT]" RESET
-               C_WARNING " to close your gaps." RESET "\n\n");
-    }
+    /* Save best result to history */
+    PredictionRecord pr;
+    pr.studentRef = sp->studentRef;
+    strncpy(pr.topCareer, careers[0].name, sizeof(pr.topCareer) - 1);
+    pr.topCareer[sizeof(pr.topCareer) - 1] = '\0';
+    pr.score = scores[0];
+    db_save_prediction(&pr);
 
     pauseScreen();
 }
