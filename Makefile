@@ -12,4 +12,4 @@ career_system: $(SRC)
 	$(CC) $(CFLAGS) $(SRC) -o career_system
 
 clean:
-	rm -f career_system
+	rm -f career_system 
