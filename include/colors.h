@@ -30,27 +30,27 @@
 #define C_NEEDS    "\033[38;5;196m"  // Red   (same as ERROR)
 
 /* Box Drawing Characters (single line) */
-#define BOX_TL     "┌"
-#define BOX_TR     "┐"
-#define BOX_BL     "└"
-#define BOX_BR     "┘"
-#define BOX_V      "│"
-#define BOX_H      "─"
+#define BOX_TL     "\xe2\x94\x8c" // "┌"
+#define BOX_TR     "\xe2\x94\x90" // "┐"
+#define BOX_BL     "\xe2\x94\x94" // "└"
+#define BOX_BR     "\xe2\x94\x98" // "┘"
+#define BOX_V      "\xe2\x94\x82" // "│"
+#define BOX_H      "\xe2\x94\x80" // "─"
 
 /* Box Drawing Characters (double line) */
-#define DBL_TL     "╔"
-#define DBL_TR     "╗"
-#define DBL_BL     "╚"
-#define DBL_BR     "╝"
-#define DBL_V      "║"
-#define DBL_H      "═"
+#define DBL_TL     "\xe2\x95\x94" // "╔"
+#define DBL_TR     "\xe2\x95\x97" // "╗"
+#define DBL_BL     "\xe2\x95\x9a" // "╚"
+#define DBL_BR     "\xe2\x95\x9d" // "╝"
+#define DBL_V      "\xe2\x95\x91" // "║"
+#define DBL_H      "\xe2\x95\x90" // "═"
 
 /* Symbols */
-#define SYM_ARROW  "→"
-#define SYM_CHECK  "✓"
-#define SYM_CROSS  "✗"
-#define SYM_STAR   "★"
-#define SYM_WARN   "⚠"
+#define SYM_ARROW  "\xe2\x86\x92" // "→"
+#define SYM_CHECK  "\xe2\x9c\x93" // "✓"
+#define SYM_CROSS  "\xe2\x9c\x97" // "✗"
+#define SYM_STAR   "\xe2\x98\x85" // "★"
+#define SYM_WARN   "\xe2\x9a\xa0" // "⚠"
 
 /* Box Dimensions */
 #define BOX_WIDTH  48

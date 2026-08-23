@@ -1,6 +1,15 @@
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
+#include <direct.h>
+#define MKDIR(path) _mkdir(path)
+#else
+#include <sys/stat.h>
+#define MKDIR(path) mkdir(path, 0777)
+#endif
+#include <errno.h>
 #include "file_handler.h"
+#include "colors.h"
 
 #define STUDENT_FILE  "data/students.dat"
 #define HISTORY_FILE  "data/history.dat"
@@ -120,4 +129,37 @@ int loadSkillProfile(int studentRef, SkillProfile *sp) {
     }
     fclose(f);
     return 0;
+}
+
+void exportStudentsToCSV(void) {
+    Student arr[100];
+    int n;
+    loadAllStudents(arr, &n);
+    
+    MKDIR("reports");
+    
+    FILE *fp = fopen("reports/students_export.csv", "w");
+    if (!fp) {
+        printError("Failed to create CSV file.");
+        return;
+    }
+    
+    fprintf(fp, "ID,Name,StudentID,CGPA,Department,Status\n");
+    int count = 0;
+    for (int i = 0; i < n; i++) {
+        fprintf(fp, "%d,\"%s\",\"%s\",%.2f,\"%s\",%s\n",
+                arr[i].id,
+                arr[i].name,
+                arr[i].studentID,
+                arr[i].cgpa,
+                arr[i].department,
+                arr[i].isActive ? "Active" : "Deleted");
+        count++;
+    }
+    fclose(fp);
+    
+    char msg[128];
+    snprintf(msg, sizeof(msg), "Successfully exported %d students to reports/students_export.csv", count);
+    printSuccess(msg);
+    pauseScreen();
 }
