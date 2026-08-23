@@ -405,3 +405,22 @@ int db_load_skill_profile(int studentRef, SkillProfile *sp) {
     sqlite3_finalize(stmt);
     return found;
 }
+
+int db_get_last_prediction(int studentRef, PredictionRecord *pr) {
+    const char *sql = "SELECT studentRef, topCareer, score FROM Predictions "
+                      "WHERE studentRef = ? ORDER BY id DESC LIMIT 1;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return 0;
+    sqlite3_bind_int(stmt, 1, studentRef);
+    int found = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        pr->studentRef = sqlite3_column_int(stmt, 0);
+        const char *career = (const char *)sqlite3_column_text(stmt, 1);
+        if (career) strncpy(pr->topCareer, career, sizeof(pr->topCareer) - 1);
+        pr->topCareer[sizeof(pr->topCareer) - 1] = '\0';
+        pr->score = (float)sqlite3_column_double(stmt, 2);
+        found = 1;
+    }
+    sqlite3_finalize(stmt);
+    return found;
+}
