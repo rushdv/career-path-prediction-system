@@ -338,3 +338,70 @@ int db_save_skill_profile(const SkillProfile *sp) {
     sqlite3_finalize(stmt);
     return res;
 }
+
+int db_load_skill_profile(int studentRef, SkillProfile *sp) {
+    const char *sql = "SELECT * FROM SkillProfiles WHERE studentRef=?;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return 0;
+    
+    sqlite3_bind_int(stmt, 1, studentRef);
+    int found = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        memset(sp, 0, sizeof(SkillProfile));
+        sp->studentRef = sqlite3_column_int(stmt, 0);
+        
+        sp->level_programming = sqlite3_column_int(stmt, 1);
+        sp->level_networking = sqlite3_column_int(stmt, 2);
+        sp->level_design = sqlite3_column_int(stmt, 3);
+        sp->level_analytics = sqlite3_column_int(stmt, 4);
+        sp->level_communication = sqlite3_column_int(stmt, 5);
+        sp->level_security = sqlite3_column_int(stmt, 6);
+        
+        sp->programming = sqlite3_column_double(stmt, 7);
+        sp->networking = sqlite3_column_double(stmt, 8);
+        sp->design = sqlite3_column_double(stmt, 9);
+        sp->analytics = sqlite3_column_double(stmt, 10);
+        sp->communication = sqlite3_column_double(stmt, 11);
+        sp->security = sqlite3_column_double(stmt, 12);
+        
+        sp->course_ml_ai = sqlite3_column_int(stmt, 13);
+        sp->course_web_dev = sqlite3_column_int(stmt, 14);
+        sp->course_data_science = sqlite3_column_int(stmt, 15);
+        sp->course_cybersecurity = sqlite3_column_int(stmt, 16);
+        sp->course_cloud_computing = sqlite3_column_int(stmt, 17);
+        
+        sp->lang_python = sqlite3_column_int(stmt, 18);
+        sp->lang_java = sqlite3_column_int(stmt, 19);
+        sp->lang_c_cpp = sqlite3_column_int(stmt, 20);
+        sp->lang_js = sqlite3_column_int(stmt, 21);
+        sp->lang_php = sqlite3_column_int(stmt, 22);
+        sp->lang_go = sqlite3_column_int(stmt, 23);
+        sp->lang_kotlin = sqlite3_column_int(stmt, 24);
+        sp->lang_sql = sqlite3_column_int(stmt, 25);
+        
+        sp->tool_git = sqlite3_column_int(stmt, 26);
+        sp->tool_docker = sqlite3_column_int(stmt, 27);
+        sp->tool_linux = sqlite3_column_int(stmt, 28);
+        sp->tool_cloud = sqlite3_column_int(stmt, 29);
+        sp->tool_react_vue = sqlite3_column_int(stmt, 30);
+        sp->tool_tf_pytorch = sqlite3_column_int(stmt, 31);
+        sp->tool_figma = sqlite3_column_int(stmt, 32);
+        sp->tool_mongodb = sqlite3_column_int(stmt, 33);
+        
+        sp->proj_web = sqlite3_column_int(stmt, 34);
+        sp->proj_mobile = sqlite3_column_int(stmt, 35);
+        sp->proj_db = sqlite3_column_int(stmt, 36);
+        sp->proj_ai = sqlite3_column_int(stmt, 37);
+        sp->proj_security = sqlite3_column_int(stmt, 38);
+        
+        sp->exp_internship = sqlite3_column_int(stmt, 39);
+        sp->exp_hackathon = sqlite3_column_int(stmt, 40);
+        sp->exp_competitive_prog = sqlite3_column_int(stmt, 41);
+        sp->exp_research = sqlite3_column_int(stmt, 42);
+        
+        sp->career_interest = sqlite3_column_int(stmt, 43);
+        found = 1;
+    }
+    sqlite3_finalize(stmt);
+    return found;
+}
