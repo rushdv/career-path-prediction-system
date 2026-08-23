@@ -24,6 +24,38 @@ An advanced, menu-driven C-based **Career Path Prediction & Skill Analytics Syst
 
 ---
 
+## 🖼️ Application Screenshots & UI Showcase
+
+### 🔐 1. Authentication & System Gateway
+![Authentication Menu](assets/screenshots/auth_menu.png)
+
+---
+
+### 👨‍🎓 2. Student Dashboard & Menu System
+![Student Dashboard](assets/screenshots/student_dashboard.png)
+
+---
+
+### 🏆 3. Intelligent Career Path Prediction Results
+![Career Prediction Results](assets/screenshots/prediction_results.png)
+
+---
+
+### 🎯 4. Interactive Skill Gap Analysis
+![Skill Gap Analysis](assets/screenshots/gap_analysis.png)
+
+---
+
+### 🛡️ 5. Administrator Control Panel
+![Admin Panel](assets/screenshots/admin_panel.png)
+
+---
+
+### 📊 6. Real-Time Analytics Dashboard & Charts
+![Analytics Dashboard](assets/screenshots/analytics_dashboard.png)
+
+---
+
 ## 👥 Team Work Plan & File Distribution
 
 | Week | Task | Deliverable | Responsible |
@@ -64,6 +96,16 @@ An advanced, menu-driven C-based **Career Path Prediction & Skill Analytics Syst
 
 ```
 career-path-prediction-system/
+├── assets/
+│   └── screenshots/       # Application UI screenshots
+│       ├── admin_panel.png
+│       ├── analytics_dashboard.png
+│       ├── auth_menu.png
+│       ├── gap_analysis.png
+│       ├── prediction_results.png
+│       └── student_dashboard.png
+├── build.bat              # Windows 1-click build script
+├── run.bat                # Windows 1-click run script
 ├── CMakeLists.txt         # CMake build configuration
 ├── Makefile               # GNU Make automation script
 ├── README.md              # Project documentation
@@ -78,6 +120,8 @@ career-path-prediction-system/
 │   ├── input_handler.h
 │   ├── prediction.h
 │   ├── report.h
+│   ├── sha256.h
+│   ├── sqlite3.h
 │   ├── student.h
 │   └── ui.h
 └── src/                   # C Source implementations
@@ -91,6 +135,8 @@ career-path-prediction-system/
     ├── main.c
     ├── prediction.c
     ├── report.c
+    ├── sha256.c
+    ├── sqlite3.c
     ├── student.c
     └── ui.c
 ```
@@ -99,17 +145,15 @@ career-path-prediction-system/
 
 ## ⚙️ Prerequisites
 
-Before building the project, ensure you have the following dependencies installed on your system:
+Thanks to the self-contained pure C SHA-256 and embedded SQLite3 amalgamation, **NO external libraries** (`libsqlite3` / `OpenSSL`) are required!
 
-- **C Compiler:** `gcc` (supporting C99 or later)
-- **Build System:** `make` or `cmake` (v3.10+)
-- **Database Library:** SQLite3 (`libsqlite3-dev`)
-- **Crypto Library:** OpenSSL (`libssl-dev`)
+- **C Compiler:** `gcc` (supporting C99 or later) or `clang`
+- **Build System (Optional):** `make` or `cmake` (v3.10+)
 
 ### Installation on Ubuntu/Debian Linux:
 ```bash
 sudo apt update
-sudo apt install build-essential cmake libsqlite3-dev libssl-dev -y
+sudo apt install build-essential -y
 ```
 
 ---
