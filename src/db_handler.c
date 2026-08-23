@@ -143,3 +143,95 @@ int db_get_student_by_num(int id, Student *s) {
     sqlite3_finalize(stmt);
     return found;
 }
+
+void db_list_all_students(void) {
+    const char *sql = "SELECT id, name, studentID, cgpa, department FROM Students WHERE isActive=1;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return;
+    
+    int count = 0;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int id = sqlite3_column_int(stmt, 0);
+        const char *name = (const char *)sqlite3_column_text(stmt, 1);
+        const char *sid = (const char *)sqlite3_column_text(stmt, 2);
+        double cgpa = sqlite3_column_double(stmt, 3);
+        const char *dept = (const char *)sqlite3_column_text(stmt, 4);
+        
+        printf("%s" UI_PAD "%s%-4d%s  %-24.24s  %s%-12.12s%s  %s%-6.2f%s  %-14.14s\n",
+               CC(RESET),
+               CC(C_VALUE), id, CC(RESET),
+               name,
+               CC(C_ACCENT), sid,  CC(RESET),
+               CC(C_INFO),   cgpa, CC(RESET),
+               dept ? dept : "");
+        count++;
+
+        if (count % 10 == 0) {
+            printf(UI_PAD "%s", CC(C_DIM));
+            for (int j = 0; j < 68; j++) fputs(BOX_H, stdout);
+            printf("%s\n", CC(RESET));
+            printf(UI_PAD "%sPress Enter to continue or 'q' to quit...%s",
+                   CC(C_INFO), CC(RESET));
+
+            char c = (char)getchar();
+            if (c != '\n') while (getchar() != '\n');
+            if (c == 'q' || c == 'Q') break;
+
+            printf("\n");
+            printf(UI_PAD "%s%s%-4s  %-24s  %-12s  %-6s  %-14s%s\n",
+                   CC(C_PURPLE), CC(BOLD),
+                   "ID", "Name", "Student ID", "CGPA", "Department",
+                   CC(RESET));
+            printf(UI_PAD "%s", CC(C_DIM));
+            for (int j = 0; j < 68; j++) fputs(BOX_H, stdout);
+            printf("%s\n", CC(RESET));
+        }
+    }
+    sqlite3_finalize(stmt);
+
+    printf(UI_PAD "%s", CC(C_DIM));
+    for (int j = 0; j < 68; j++) fputs(BOX_H, stdout);
+    printf("%s\n", CC(RESET));
+
+    if (count == 0) {
+        printWarning("No active students found.");
+    } else {
+        printf(UI_PAD "%sTotal active students: %s%s%d%s\n\n",
+               CC(C_DIM), CC(RESET), CC(C_VALUE), count, CC(RESET));
+    }
+}
+
+void db_search_students(const char *name_query) {
+    const char *sql = "SELECT id, name, studentID, password, cgpa, department, isActive FROM Students WHERE isActive=1 AND name LIKE ?;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return;
+    
+    char like_query[100];
+    snprintf(like_query, sizeof(like_query), "%%%s%%", name_query);
+    sqlite3_bind_text(stmt, 1, like_query, -1, SQLITE_TRANSIENT);
+    
+    int found = 0;
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        Student s;
+        fill_student_from_stmt(stmt, &s);
+        
+        char idStr[12], cgpaStr[10];
+        snprintf(idStr, sizeof(idStr), "%d", s.id);
+        snprintf(cgpaStr, sizeof(cgpaStr), "%.2f", s.cgpa);
+        
+        boxTop();
+        printKV("Name", s.name);
+        printKV("Student ID", s.studentID);
+        printKV("Unique ID", idStr);
+        printKV("CGPA", cgpaStr);
+        printKV("Department", s.department);
+        boxBottom();
+        printf("\n");
+        found = 1;
+    }
+    sqlite3_finalize(stmt);
+    
+    if (!found) {
+        printWarning("No students found matching that name.");
+    }
+}
