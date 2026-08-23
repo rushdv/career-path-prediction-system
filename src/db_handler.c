@@ -276,3 +276,65 @@ void db_print_dept_stats(void) {
     }
     sqlite3_finalize(stmt);
 }
+
+int db_save_skill_profile(const SkillProfile *sp) {
+    const char *sql = "REPLACE INTO SkillProfiles (studentRef, level_programming, level_networking, level_design, level_analytics, level_communication, level_security, programming, networking, design, analytics, communication, security, course_ml_ai, course_web_dev, course_data_science, course_cybersecurity, course_cloud_computing, lang_python, lang_java, lang_c_cpp, lang_js, lang_php, lang_go, lang_kotlin, lang_sql, tool_git, tool_docker, tool_linux, tool_cloud, tool_react_vue, tool_tf_pytorch, tool_figma, tool_mongodb, proj_web, proj_mobile, proj_db, proj_ai, proj_security, exp_internship, exp_hackathon, exp_competitive_prog, exp_research, career_interest) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return 0;
+    
+    sqlite3_bind_int(stmt, 1, sp->studentRef);
+    sqlite3_bind_int(stmt, 2, sp->level_programming);
+    sqlite3_bind_int(stmt, 3, sp->level_networking);
+    sqlite3_bind_int(stmt, 4, sp->level_design);
+    sqlite3_bind_int(stmt, 5, sp->level_analytics);
+    sqlite3_bind_int(stmt, 6, sp->level_communication);
+    sqlite3_bind_int(stmt, 7, sp->level_security);
+    
+    sqlite3_bind_double(stmt, 8, sp->programming);
+    sqlite3_bind_double(stmt, 9, sp->networking);
+    sqlite3_bind_double(stmt, 10, sp->design);
+    sqlite3_bind_double(stmt, 11, sp->analytics);
+    sqlite3_bind_double(stmt, 12, sp->communication);
+    sqlite3_bind_double(stmt, 13, sp->security);
+    
+    sqlite3_bind_int(stmt, 14, sp->course_ml_ai);
+    sqlite3_bind_int(stmt, 15, sp->course_web_dev);
+    sqlite3_bind_int(stmt, 16, sp->course_data_science);
+    sqlite3_bind_int(stmt, 17, sp->course_cybersecurity);
+    sqlite3_bind_int(stmt, 18, sp->course_cloud_computing);
+    
+    sqlite3_bind_int(stmt, 19, sp->lang_python);
+    sqlite3_bind_int(stmt, 20, sp->lang_java);
+    sqlite3_bind_int(stmt, 21, sp->lang_c_cpp);
+    sqlite3_bind_int(stmt, 22, sp->lang_js);
+    sqlite3_bind_int(stmt, 23, sp->lang_php);
+    sqlite3_bind_int(stmt, 24, sp->lang_go);
+    sqlite3_bind_int(stmt, 25, sp->lang_kotlin);
+    sqlite3_bind_int(stmt, 26, sp->lang_sql);
+    
+    sqlite3_bind_int(stmt, 27, sp->tool_git);
+    sqlite3_bind_int(stmt, 28, sp->tool_docker);
+    sqlite3_bind_int(stmt, 29, sp->tool_linux);
+    sqlite3_bind_int(stmt, 30, sp->tool_cloud);
+    sqlite3_bind_int(stmt, 31, sp->tool_react_vue);
+    sqlite3_bind_int(stmt, 32, sp->tool_tf_pytorch);
+    sqlite3_bind_int(stmt, 33, sp->tool_figma);
+    sqlite3_bind_int(stmt, 34, sp->tool_mongodb);
+    
+    sqlite3_bind_int(stmt, 35, sp->proj_web);
+    sqlite3_bind_int(stmt, 36, sp->proj_mobile);
+    sqlite3_bind_int(stmt, 37, sp->proj_db);
+    sqlite3_bind_int(stmt, 38, sp->proj_ai);
+    sqlite3_bind_int(stmt, 39, sp->proj_security);
+    
+    sqlite3_bind_int(stmt, 40, sp->exp_internship);
+    sqlite3_bind_int(stmt, 41, sp->exp_hackathon);
+    sqlite3_bind_int(stmt, 42, sp->exp_competitive_prog);
+    sqlite3_bind_int(stmt, 43, sp->exp_research);
+    
+    sqlite3_bind_int(stmt, 44, sp->career_interest);
+    
+    int res = (sqlite3_step(stmt) == SQLITE_DONE);
+    sqlite3_finalize(stmt);
+    return res;
+}
