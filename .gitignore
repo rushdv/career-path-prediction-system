@@ -1,0 +1,28 @@
+# Binaries and executables
+career_system
+career_system.exe
+*.exe
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+
+# Build directories
+build/
+bin/
+obj/
+
+# Temporary / Debug files
+debug_parse
+debug_parse.c
+debug_score
+debug_score.c
+output*.txt
+test_*.txt
+
+# IDE & OS specific
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

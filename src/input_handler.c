@@ -53,7 +53,6 @@ int getIntInput(void) {
     }
 }
 
-<<<<<<< HEAD
 int getIntInputRange(int min, int max) {
     char buf[128];
     int val;
@@ -74,10 +73,6 @@ int getIntInputRange(int min, int max) {
 void restoreTerminal(void) {}
 static void enableRawMode(void) {}
 #else
-=======
-/* Helper to set terminal mode */
-#ifndef _WIN32
->>>>>>> dd9cd7e011177b3dd54bb3ef6a3d23b092b0be1d
 static struct termios orig_termios;
 
 void restoreTerminal(void) {
@@ -90,12 +85,6 @@ static void enableRawMode(void) {
     raw.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
-<<<<<<< HEAD
-=======
-#else
-static void disableRawMode(void) {}
-static void enableRawMode(void) {}
->>>>>>> dd9cd7e011177b3dd54bb3ef6a3d23b092b0be1d
 #endif
 
 /* ══════════════════════════════════════════════════════════
@@ -240,14 +229,5 @@ int getMenuSelection(const char *title, const char *subtitle,
             restoreTerminal();
         }
 #endif
-<<<<<<< HEAD
-=======
-#ifdef _WIN32
-        if (c == '\r' || c == '\n') {
-            disableRawMode();
-            return selected;
-        }
-#endif
->>>>>>> dd9cd7e011177b3dd54bb3ef6a3d23b092b0be1d
     }
 }
