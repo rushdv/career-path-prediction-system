@@ -75,3 +75,71 @@ int db_insert_student(const Student *s) {
     sqlite3_finalize(stmt);
     return result;
 }
+
+int db_update_student(const Student *s) {
+    const char *sql = "UPDATE Students SET name=?, password=?, cgpa=?, department=?, isActive=? WHERE studentID=?;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return 0;
+    
+    sqlite3_bind_text(stmt, 1, s->name, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, s->password, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_double(stmt, 3, s->cgpa);
+    sqlite3_bind_text(stmt, 4, s->department, -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 5, s->isActive);
+    sqlite3_bind_text(stmt, 6, s->studentID, -1, SQLITE_TRANSIENT);
+    
+    int result = (sqlite3_step(stmt) == SQLITE_DONE) ? 1 : 0;
+    sqlite3_finalize(stmt);
+    return result;
+}
+
+int db_delete_student(const char *studentID) {
+    const char *sql = "UPDATE Students SET isActive=0 WHERE studentID=?;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return 0;
+    
+    sqlite3_bind_text(stmt, 1, studentID, -1, SQLITE_TRANSIENT);
+    int result = (sqlite3_step(stmt) == SQLITE_DONE) ? 1 : 0;
+    sqlite3_finalize(stmt);
+    return result;
+}
+
+static void fill_student_from_stmt(sqlite3_stmt *stmt, Student *s) {
+    s->id = sqlite3_column_int(stmt, 0);
+    strcpy(s->name, (const char *)sqlite3_column_text(stmt, 1));
+    strcpy(s->studentID, (const char *)sqlite3_column_text(stmt, 2));
+    strcpy(s->password, (const char *)sqlite3_column_text(stmt, 3));
+    s->cgpa = sqlite3_column_double(stmt, 4);
+    strcpy(s->department, (const char *)sqlite3_column_text(stmt, 5));
+    s->isActive = sqlite3_column_int(stmt, 6);
+}
+
+int db_get_student_by_id(const char *studentID, Student *s) {
+    const char *sql = "SELECT id, name, studentID, password, cgpa, department, isActive FROM Students WHERE studentID=?;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return 0;
+    
+    sqlite3_bind_text(stmt, 1, studentID, -1, SQLITE_TRANSIENT);
+    int found = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        fill_student_from_stmt(stmt, s);
+        found = 1;
+    }
+    sqlite3_finalize(stmt);
+    return found;
+}
+
+int db_get_student_by_num(int id, Student *s) {
+    const char *sql = "SELECT id, name, studentID, password, cgpa, department, isActive FROM Students WHERE id=?;";
+    sqlite3_stmt *stmt;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) return 0;
+    
+    sqlite3_bind_int(stmt, 1, id);
+    int found = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        fill_student_from_stmt(stmt, s);
+        found = 1;
+    }
+    sqlite3_finalize(stmt);
+    return found;
+}
