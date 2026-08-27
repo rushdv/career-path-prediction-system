@@ -1,0 +1,41 @@
+=================================================
+        CAREER PATH PREDICTION REPORT            
+=================================================
+
+Date Generated : 2026-08-24 10:31:08
+
+--- STUDENT PROFILE ---
+Name           : Rashu
+Student ID     : 001
+Department     : cse
+CGPA           : 3.70
+
+--- SKILL COMPETENCY LEVELS ---
+Programming    : Intermediate   (6.0/10)
+Networking     : Advanced       (8.0/10)
+Cybersecurity  : Expert         (10.0/10)
+Data Analytics : Elementary     (4.0/10)
+UI/UX Design   : Advanced       (8.0/10)
+Communication  : Advanced       (8.0/10)
+
+--- KNOWN LANGUAGES & TOOLS ---
+Languages      : Python C/C++ JavaScript Go SQL 
+Tools/Platforms: Git Linux Figma MongoDB 
+
+--- PRACTICAL PROJECTS & EXPERIENCE ---
+Web App Built      : Yes
+Mobile App Built   : No
+DB System Built    : No
+AI Model Built     : No
+Security Tool Built: No
+Internship Done    : No
+Hackathon Particip.: No
+Competitive Prog.  : No
+Research Paper/T.  : No
+
+--- RECOMMENDED CAREER PATHS ---
+#1 Network Infrastructure Engineer | Match: 88%
+#2 Penetration Tester / Ethical Hacker | Match: 86%
+#3 Information Security Auditor   | Match: 85%
+
+=================================================

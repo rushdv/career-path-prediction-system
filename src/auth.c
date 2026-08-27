@@ -49,14 +49,14 @@ static void drawSplash(void) {
         splashRow(buf, frameWidth);
     }
 
-    /* Institution */
+    /* Institution 
     {
         char buf[128];
         snprintf(buf, sizeof(buf), "%s%s%s",
-                 CC(C_INFO), "Northern University Bangladesh", CC(RESET));
+                 CC(C_INFO), " University ", CC(RESET));
         splashRow(buf, frameWidth);
     }
-
+    */
     /* Version */
     {
         char buf[64];
