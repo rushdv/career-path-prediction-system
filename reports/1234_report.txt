@@ -1,0 +1,39 @@
+==============================================
+    CAREER PATH PREDICTION SYSTEM REPORT
+    Northern University Bangladesh
+==============================================
+ Generated : 2026-07-24 14:54:51
+
+----------------------------------------------
+ STUDENT INFORMATION
+----------------------------------------------
+ Name       : Abdullah
+ Student ID : 1234
+ CGPA       : 3.56
+ Department : CSE
+
+----------------------------------------------
+ SKILL ASSESSMENT RESULTS
+----------------------------------------------
+ Programming   : 5.0 / 10
+ Networking    : 7.0 / 10
+ Design        : 5.0 / 10
+ Analytics     : 3.0 / 10
+ Communication : 7.0 / 10
+ Security      : 8.0 / 10
+
+----------------------------------------------
+ CAREER PATH RANKINGS
+----------------------------------------------
+ 1. Cybersecurity Analyst      6.20 / 10
+ 2. Network Engineer           6.15 / 10
+ 3. IT Project Manager         5.80 / 10
+ 4. UI/UX Designer             5.35 / 10
+ 5. Software Developer         5.30 / 10
+ 6. Data Analyst               4.90 / 10
+
+ TOP RECOMMENDATION: Cybersecurity Analyst
+
+==============================================
+ END OF REPORT
+==============================================

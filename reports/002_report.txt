@@ -1,0 +1,39 @@
+==============================================
+    CAREER PATH PREDICTION SYSTEM REPORT
+    Northern University Bangladesh
+==============================================
+ Generated : 2026-07-24 14:59:52
+
+----------------------------------------------
+ STUDENT INFORMATION
+----------------------------------------------
+ Name       : Abu Ahmad
+ Student ID : 002
+ CGPA       : 3.75
+ Department : CSE
+
+----------------------------------------------
+ SKILL ASSESSMENT RESULTS
+----------------------------------------------
+ Programming   : 7.0 / 10
+ Networking    : 2.0 / 10
+ Design        : 6.0 / 10
+ Analytics     : 5.0 / 10
+ Communication : 3.0 / 10
+ Security      : 1.0 / 10
+
+----------------------------------------------
+ CAREER PATH RANKINGS
+----------------------------------------------
+ 1. Software Developer         4.95 / 10
+ 2. UI/UX Designer             4.95 / 10
+ 3. Data Analyst               4.65 / 10
+ 4. IT Project Manager         4.00 / 10
+ 5. Cybersecurity Analyst      3.45 / 10
+ 6. Network Engineer           3.35 / 10
+
+ TOP RECOMMENDATION: Software Developer
+
+==============================================
+ END OF REPORT
+==============================================
